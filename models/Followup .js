@@ -81,7 +81,6 @@ module.exports = (sequelize, DataTypes) => {
         {
             sequelize,
             modelName: "FollowUp",
-            tableName: "FollowUps",
             timestamps: true,
             indexes: [
                 {

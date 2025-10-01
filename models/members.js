@@ -154,7 +154,6 @@ module.exports = (sequelize, DataTypes) => {
         {
             sequelize,
             modelName: "Member",
-            tableName: "Members",
             timestamps: true, // Adds createdAt and updatedAt
             indexes: [
                 {

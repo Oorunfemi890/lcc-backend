@@ -80,7 +80,6 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Program",
-      tableName: "Programs",
       timestamps: true,
       indexes: [
         {

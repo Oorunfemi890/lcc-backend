@@ -42,11 +42,15 @@ module.exports = (sequelize, DataTypes) => {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'  // optional: behavior when referenced record is updated
       },
+      email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+      },
     },
     {
       sequelize,
       modelName: "AdminUser",
-      tableName: "AdminUser",
       timestamps: true,
     }
   );
