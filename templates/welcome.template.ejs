@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to <%= churchName %></title>
+    <style>
+        /* Base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header with gradient */
+        .email-header {
+            background: linear-gradient(135deg, #9810fa 0%, #4f46e5 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+        
+        .church-logo {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .church-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .church-tagline {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-top: 8px;
+        }
+        
+        /* Content sections */
+        .email-content {
+            padding: 40px 30px;
+        }
+        
+        .welcome-title {
+            color: #1e293b;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .greeting {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: #475569;
+        }
+        
+        .feature-section {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 4px solid #9810fa;
+        }
+        
+        .feature-title {
+            color: #1e293b;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .feature-item {
+            padding: 8px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .feature-icon {
+            color: #9810fa;
+            margin-right: 12px;
+            font-weight: bold;
+        }
+        
+        /* Action buttons */
+        .action-buttons {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #9810fa;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #64748b;
+        }
+        
+        .btn-secondary:hover {
+            background: #475569;
+        }
+        
+        /* Contact info */
+        .contact-info {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .contact-title {
+            color: #1e293b;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        /* Footer */
+        .email-footer {
+            background: #1e293b;
+            color: #cbd5e1;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .footer-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .social-links {
+            margin: 20px 0;
+        }
+        
+        .social-link {
+            display: inline-block;
+            margin: 0 10px;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .social-link:hover {
+            color: white;
+        }
+        
+        .unsubscribe {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 20px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            .email-content {
+                padding: 30px 20px;
+            }
+            
+            .action-buttons {
+                text-align: center;
+            }
+            
+            .btn {
+                display: block;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="email-header">
+            <div class="church-logo">⛪</div>
+            <h1 class="church-name"><%= churchName %></h1>
+            <p class="church-tagline"><%= churchTagline %></p>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="email-content">
+            <h2 class="welcome-title">Welcome to Our Church Family!</h2>
+            
+            <div class="greeting">
+                <p>Dear <strong><%= memberName %></strong>,</p>
+                
+                <p>We are absolutely thrilled to welcome you to the <strong><%= churchName %></strong> family! Your registration means so much to us, and we're excited to embark on this spiritual journey together.</p>
+                
+                <p>At <%= churchName %>, we believe in building a community rooted in faith, love, and service. We're committed to walking alongside you as you grow in your relationship with God and discover your purpose.</p>
+            </div>
+            
+            <!-- Member Features -->
+            <div class="feature-section">
+                <h3 class="feature-title">Here's what you can do with your member account:</h3>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span><strong>Update your profile</strong> - Keep your contact information current</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span><strong>Share testimonies</strong> - Inspire others with your faith journey</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span><strong>View church programs</strong> - Stay updated on upcoming events and services</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span><strong>Connect with follow-ups</strong> - Receive spiritual support and guidance</span>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span><strong>Join ministry groups</strong> - Find your place to serve and grow</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="<%= loginUrl %>" class="btn">Access Your Account</a>
+                <a href="<%= eventsUrl %>" class="btn btn-secondary">View Upcoming Events</a>
+            </div>
+            
+            <!-- Next Steps -->
+            <div class="greeting">
+                <p><strong>Your next steps:</strong></p>
+                <p>1. Complete your profile with additional information<br>
+                2. Explore our ministries and programs<br>
+                3. Join us for our next service or event<br>
+                4. Connect with our community groups</p>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="contact-info">
+                <h3 class="contact-title">We're Here for You</h3>
+                <p>If you have any questions or need assistance, please don't hesitate to reach out:</p>
+                <p>
+                    <strong>Email:</strong> <%= churchEmail %><br>
+                    <strong>Phone:</strong> <%= churchPhone %><br>
+                    <strong>Address:</strong> <%= churchAddress %>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="email-footer">
+            <p class="footer-text">
+                "For where two or three gather in my name, there am I with them."<br>
+                <em>- Matthew 18:20</em>
+            </p>
+            
+            <div class="social-links">
+                <a href="<%= facebookUrl %>" class="social-link">Facebook</a>
+                <a href="<%= instagramUrl %>" class="social-link">Instagram</a>
+                <a href="<%= youtubeUrl %>" class="social-link">YouTube</a>
+                <a href="<%= websiteUrl %>" class="social-link">Website</a>
+            </div>
+            
+            <p class="footer-text">
+                &copy; <%= new Date().getFullYear() %> <%= churchName %>. All rights reserved.<br>
+                <%= churchAddress %>
+            </p>
+            
+            <p class="unsubscribe">
+                You're receiving this email because you registered at <%= churchName %>. 
+                <a href="<%= unsubscribeUrl %>" style="color: #94a3b8;">Unsubscribe</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

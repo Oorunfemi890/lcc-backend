@@ -8,50 +8,46 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      // AdminUser belongs to Member
+      AdminUser.belongsTo(models.Member, {
+        foreignKey: 'memberId',
+        as: 'member', // alias for the association
+        onDelete: 'CASCADE', // optional: what to do if Member is deleted
+        onUpdate: 'CASCADE'  // optional: what to do if Member ID is updated
+      });
     }
   }
   AdminUser.init(
     {
-      email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-      },
-      firstName: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      lastName: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      phoneNumber: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
       password: {
-        type: DataTypes.STRING,
-      },
-      address: {
         type: DataTypes.STRING,
       },
       active: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
         defaultValue: true,
       },
       role: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM,
+        values: ["SUPER_ADMIN", "ADMIN", "EDITOR", "VIEWER"],
         defaultValue: "ADMIN",
       },
-      countryCode: {
-        type: DataTypes.STRING,
+      memberId: {
+        type: DataTypes.UUID,
         allowNull: false,
+        references: {
+          model: 'Members', // name of the target table
+          key: 'id'         // key in the target table that we're referencing
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'  // optional: behavior when referenced record is updated
       },
     },
     {
       sequelize,
       modelName: "AdminUser",
+      tableName: "AdminUser",
+      timestamps: true,
     }
   );
   return AdminUser;

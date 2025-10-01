@@ -1,67 +1,41 @@
-import authRoute from "../routes/authRoute";
-import userRoute from "../routes/userRoute";
-import { logger } from "../logger/winston";
-
 const express = require("express");
-const http = require("http");
-const https = require("https");
-const fs = require("fs");
-const path = require(`path`);
 const app = express();
-const server = http.createServer(app);
-const privateKey = (path.join(__dirname, "/private.key"));
-const certificatePem = path.join(__dirname, "/certificate.pem");
-
-if (fs.existsSync(privateKey) && fs.existsSync(certificatePem)) {
-  const SecurServer = https.createServer({
-    key: fs.readFileSync(privateKey),
-    cert: fs.readFileSync(certificatePem)
-  }, app);
-}
-
 const bodyParser = require("body-parser");
 const cors = require("cors");
+
+import { logger } from "../logger/winston";
+const customExpress = require("../validation/express.validation");
+
+
+import authRoute from "../routes/auth.route";
+import member from '../routes/member.route';
+import celebrant from '../routes/member.route'
+import firsttimer from '../routes/first.timer.route';
+import followup from '../routes/follow-up.route';
+import program from '../routes/program.route';
+import service from '../routes/service.route';
+import testimony from '../routes/testimony.route';
 
 module.exports = function () {
   app.use(bodyParser.json());
   app.use(cors());
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use("/api/v1/auth", authRoute);
-  app.use("/api/v1/user", userRoute);
+  app.use("/api/v1/member", member);
+  app.use("/api/v1/celebrant", celebrant);
+  app.use("/api/v1/firsttimer", firsttimer);
+  app.use("/api/v1/followup", followup);
+  app.use("/api/v1/program", program);
+  app.use("/api/v1/service", service);
+  app.use("/api/v1/testimony", testimony);
 
 
-  app.get("/", (req, res) => {
-    res.send("welcome to backend");
-  });
-  const customExpress = Object.create(express().response, {
-    data: {
-      value(data, message = "success", status = true) {
-        return this.type("json").json({
-          status,
-          data,
-          message,
-        });
-      },
-    },
-    error: {
-      value(error, message = "An error occured", code) {
-        return this.status(code || 500).json({
-          message,
-          statusCode: -3,
-          status: false,
-          error,
-        });
-      },
-    },
-    errorMessage: {
-      value(message = "API response message", code) {
-        return this.status(code || 400).json({
-          message,
-          statusCode: 1,
-          status: false,
-        });
-      },
-    },
+  app.set('view engine', 'ejs');
+
+
+
+  app.get("/health-check", (req, res) => {
+    res.send("OK");
   });
 
   app.response = Object.create(customExpress);
@@ -80,20 +54,6 @@ module.exports = function () {
       description: `Something broke!. Check application logs for helpful tips. OriginalUrl: ${req.originalUrl}`,
     });
   });
-
-  // app.use(function (err, req, res, next) {
-  //   logger.error(
-  //     err.response ? err.response.data : err.stack ? err.stack : err
-  //   );
-
-  //   res.status(err?.response?.status || 500).send({
-  //     mesage: err.response ? err.response.data : err.stack ? err.stack : err,
-  //     description: `Something broke!. Check application logs for helpful tips. OriginalUrl: ${req.originalUrl}  `,
-  //   });
-  // });
-  //   server.listen(PORT, () => {
-  //     console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
-  //   });
 
   return app;
 };

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification from <%= churchName %></title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        
+        .notification-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .notification-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            padding: 25px 30px;
+            text-align: center;
+            color: white;
+        }
+        
+        .notification-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .notification-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .notification-content {
+            padding: 30px;
+        }
+        
+        .greeting {
+            font-size: 1rem;
+            margin-bottom: 20px;
+            color: #475569;
+        }
+        
+        .notification-message {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #4f46e5;
+            margin: 20px 0;
+        }
+        
+        .message-title {
+            color: #1e293b;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .message-description {
+            color: #475569;
+            line-height: 1.5;
+            margin: 0;
+        }
+        
+        .action-button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #4f46e5;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: background 0.3s ease;
+        }
+        
+        .action-button:hover {
+            background: #7c3aed;
+        }
+        
+        .notification-footer {
+            background: #f1f5f9;
+            padding: 20px 30px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .footer-link {
+            color: #4f46e5;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="notification-container">
+        <!-- Header -->
+        <div class="notification-header">
+            <div class="notification-icon">🔔</div>
+            <h1 class="notification-title">Notification</h1>
+        </div>
+        
+        <!-- Content -->
+        <div class="notification-content">
+            <div class="greeting">
+                <p>Hello <strong><%= userName %></strong>,</p>
+                <p>You have a new notification from <strong><%= churchName %></strong>:</p>
+            </div>
+            
+            <div class="notification-message">
+                <div class="message-title"><%= notificationTitle %></div>
+                <p class="message-description"><%= notificationDescription %></p>
+            </div>
+            
+            <% if (actionUrl) { %>
+                <div style="text-align: center;">
+                    <a href="<%= actionUrl %>" class="action-button">View Details</a>
+                </div>
+            <% } %>
+        </div>
+        
+        <!-- Footer -->
+        <div class="notification-footer">
+            <p>
+                Sent from <strong><%= churchName %></strong><br>
+                <a href="<%= settingsUrl %>" class="footer-link">Manage notification preferences</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
