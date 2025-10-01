@@ -19,13 +19,12 @@ class CelebrantController {
         message,
         isPublic,
         specialRequests,
-        photoUrl,
         notes,
         submittedBy,
         submitterContact,
         relationship,
       } = req.body;
-
+      const photoUrl = req.file
       if (!name || !celebrationType || !celebrationDate || !contact) {
         return res.status(400).send({
           message:
