@@ -6,3 +6,8 @@ dist
 *.csr
 *.pem
 *.key
+**.package-lock.json
+*.package-lock.json
+/package-lock.json
+
+

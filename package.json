@@ -1,8 +1,8 @@
 {
-  "name": "relationgifts-backend",
+  "name": "lcc-portal",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js", 
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npm run build && NODE_ENV=production npm run migrate && NODE_ENV=production npm run migrate-seed && NODE_ENV=production pm2 start ./dist/index.js --name RELATIONGIFT-SERVER",
@@ -12,19 +12,15 @@
     "migrate-seed": "NODE_ENV=production&& npx sequelize-cli db:seed:all",
     "migrate-seed-dev": "npx sequelize-cli db:seed:all",
     "make-migration": "npx sequelize-cli migration:generate --name",
-    "model-generate": "npx sequelize-cli model:generate --name"
+    "model-generate": "npx sequelize-cli model:generate --name",
+    "db-create": "npx sequelize-cli db:create"
   },
   "engines": {
-    "node": "12.18.3"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@bitbucket.org/EbereBembem/relationgifts-backend.git"
+    "node": "20.18.3"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "homepage": "https://bitbucket.org/EbereBembem/relationgifts-backend#readme",
   "dependencies": {
     "@types/node": "^16.9.2",
     "@types/validator": "^13.6.3",
@@ -35,6 +31,7 @@
     "cloudinary": "^1.28.1",
     "core-js": "^3.17.3",
     "cors": "^2.8.5",
+    "dns": "^0.2.2",
     "dotenv": "^10.0.0",
     "ejs-promise": "^0.3.3",
     "express": "^4.17.1",
@@ -43,15 +40,12 @@
     "mailgun-js": "^0.22.0",
     "morgan": "^1.10.0",
     "multer": "^1.4.4",
-    "mysql2": "^2.3.0",
     "nodemon": "^2.0.12",
-    "pg": "^8.7.1",
+    "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "regenerator-runtime": "^0.13.9",
     "sequelize": "^6.6.5",
     "sequelize-cli": "^6.2.0",
-    "swagger-jsdoc": "^6.1.0",
-    "swagger-ui-express": "^4.1.6",
     "validator": "^13.7.0",
     "winston": "^3.3.3"
   },
