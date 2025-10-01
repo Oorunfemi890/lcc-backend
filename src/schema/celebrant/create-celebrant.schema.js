@@ -10,7 +10,6 @@ const createCelebrant = {
         message: Joi.string().max(1000).optional(),
         isPublic: Joi.boolean().optional(),
         specialRequests: Joi.string().max(1000).optional(),
-        photoUrl: Joi.string().uri().optional(),
         notes: Joi.string().max(2000).optional(),
         submittedBy: Joi.string().max(100).optional(),
         submitterContact: Joi.string().max(100).optional(),

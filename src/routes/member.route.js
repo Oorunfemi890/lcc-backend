@@ -4,6 +4,7 @@ import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
 import  validateRequest  from "../middleware/validate-request.middleware";
 import MemberSchema from "../schema/member";
+import ImageUploadMiddleware from '../middleware/image-upload.middleware'
 
 const router = express.Router();
 
@@ -18,9 +19,8 @@ const router = express.Router();
  */
 router.post(
   "/",
-  handleErrorAsync(AuthMiddleware.verifyToken),
-  handleErrorAsync(AuthMiddleware.isAdmin),
   validateRequest(MemberSchema.memberCreate),
+  ImageUploadMiddleware,
   handleErrorAsync(MemberController.createMember)
 );
 

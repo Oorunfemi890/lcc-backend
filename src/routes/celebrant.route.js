@@ -4,7 +4,7 @@ import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
 import  validateRequest  from "../middleware/validate-request.middleware";
 import CelebrantSchema from "../schema/celebrant";
-
+import ImageUploadMiddleware from '../middleware/image-upload.middleware'
 const router = express.Router();
 
 // ============================================
@@ -19,6 +19,7 @@ const router = express.Router();
 router.post(
   "/",
   validateRequest(CelebrantSchema.createCelebrant),
+  ImageUploadMiddleware,
   handleErrorAsync(CelebrantController.createCelebrant)
 );
 

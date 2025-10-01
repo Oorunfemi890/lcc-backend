@@ -67,14 +67,6 @@ class App {
 
   }
 
-  static discount(percentageDiscount, totalPrice) {
-
-    try {
-      return percentageDiscount * totalPrice * 0.01
-    } catch (er) {
-      throw new Error(er);
-    }
-  }
 
   static imageFileFilter(req, file, cb) {
     try {
@@ -87,13 +79,6 @@ class App {
     }
   };
 
-  static averageRating(NumberOfRating, Aggrate) {
-    try {
-      return (Aggrate / NumberOfRating)
-    } catch (er) {
-      throw new Error(er);
-    }
-  }
 
   static pagenation(page, size) {
     const limit = size ? +size : 24;

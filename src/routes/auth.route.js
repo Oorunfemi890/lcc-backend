@@ -85,7 +85,7 @@ router.post(
   "/admin",
   handleErrorAsync(AuthMiddleware.verifyToken),
   handleErrorAsync(AuthMiddleware.isSuperAdmin),
-  validateRequest(AuthSchema.createAdminSchema),
+  validateRequest(AuthSchema.createAdmin),
   handleErrorAsync(AuthController.createAdmin)
 );
 
