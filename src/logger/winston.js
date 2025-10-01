@@ -8,8 +8,8 @@ var options = {
     filename: `${appRoot}/logs/app.log`,
     handleExceptions: true,
     json: true,
-    maxsize: 5242880, // 5MB
-    maxFiles: 10,
+    maxsize: 1024, // 5MB
+    maxFiles: 2,
     colorize: false,
   },
   console: {

@@ -25,13 +25,18 @@ module.exports = {
       memberId: {
         type: Sequelize.UUID,
         allowNull: false,
-        unique: true, 
+        unique: true,
         references: {
-          model: "Members", 
+          model: "Members",
           key: "id",
         },
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true,
       },
       createdAt: {
         allowNull: false,

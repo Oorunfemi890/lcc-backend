@@ -1,4 +1,5 @@
 "use strict";
+const bcrypt = require("bcryptjs");
 
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -47,7 +48,8 @@ module.exports = {
       await queryInterface.bulkInsert("AdminUsers", [
         {
           id: Sequelize.Utils.toDefaultValue(Sequelize.UUIDV4()),
-          password: "hashedpassword123",
+          email: "odeyemiibukuna@gmail.com",
+          password:bcrypt.hashSync("hashedpassword123!", 8),
           active: true,
           role: "SUPER_ADMIN",
           memberId,

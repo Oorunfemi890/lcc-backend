@@ -149,7 +149,6 @@ module.exports = (sequelize, DataTypes) => {
         {
             sequelize,
             modelName: "FirstTimer",
-            tableName: "FirstTimers",
             timestamps: true
         }
     );
