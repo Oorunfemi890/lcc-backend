@@ -1,104 +1,67 @@
 import db from "../../models";
 import App from "../helpers/index.helper";
-import MailService from "../service/mail.service";
+import MailHelper from "../helpers/email.helper";
 import { Op } from "sequelize";
 
 const { AdminUser, Member } = db.AdminUser;
 
 class AuthController {
 
-  static async createAdmin(req, res) {
-    try {
-      const {
-        memberId,
-        firstName,
-        lastName,
-        password,
-        phoneNumber,
-        address,
-        email,
-        countryCode,
-        role = "ADMIN",
-      } = req.body;
+static async createAdmin(req, res) {
+  try {
+    const {
+      memberId,
+      role = "ADMIN",
+    } = req.body;
 
-      if (!email || !phoneNumber || !countryCode) {
-        return res.status(409).send({
-          message: "Missing Email{email}|Phonenumber{phoneNumber}|countryCode",
-        });
-      }
-
-      // normalize phone number
-      let newPhoneNumber =
-        phoneNumber[0] === "0"
-          ? phoneNumber.substring(1)
-          : phoneNumber;
-
-      // check if exists
-      const userExists = await AdminUser.findOne({
-        where: {
-          [Op.or]: [{ phoneNumber: newPhoneNumber, countryCode }, { email }],
-        },
-      });
-      if (userExists)
-        return res.status(409).send({ message: "Email/Phonenumber exists" });
-
-      // create member if not provided
-      let finalMemberId = memberId;
-      if (!finalMemberId) {
-        const newMember = await Member.create({
-          firstName,
-          lastName,
-          email,
-          phoneNumber: newPhoneNumber,
-          countryCode,
-          address,
-          memberSince: new Date(),
-          active: true,
-          membershipType: "Minister",
-        });
-        finalMemberId = newMember.id;
-      }
-
-      const hashPassword = App.hashPassword(password);
-
-      const admin = await AdminUser.create(
-        {
-          email,
-          firstName,
-          lastName,
-          password: hashPassword,
-          phoneNumber: newPhoneNumber,
-          address,
-          countryCode,
-          role,
-          memberId: finalMemberId,
-          active: true,
-        },
-        { raw: true }
-      );
-
-      // send welcome mail
-      const mail = new MailService(
-        "support@splishpay.com",
-        email,
-        "Welcome onBoard",
-        "welcome",
-        {}
-      );
-      await mail.send();
-
-      const token = App.assignToken({
-        id: admin.id,
-        email: admin.email,
-        role: admin.role,
-      });
-
-      res.status(201).send({ message: "Successful", user: { ...admin, token } });
-    } catch (error) {
-      console.log("error: ", error);
-      res.status(500).send({ message: "Internal server error" });
+    // check if member exists
+    const member = await Member.findByPk(memberId);
+    if (!member) {
+      return res.status(404).send({ message: "Member not found" });
     }
+
+    // check if admin already exists
+    const adminExists = await AdminUser.findOne({
+      where: {
+        memberId
+      },
+    });
+    if (adminExists) {
+      return res.status(409).send({ message: "Admin for this member already exists" });
+    }
+
+    const hashPassword = App.hashPassword(password);
+
+    const admin = await AdminUser.create(
+      {
+        role,
+        memberId: member.id,
+        active: true,
+      },
+      { raw: true }
+    );
+
+    // send welcome mail with member data
+      MailHelper.sendMail({
+      to: member.email,
+      subject: "Admin Welcome onBoard",
+      template: "welcome",
+      params: member,
+    });
+
+    const token = App.assignToken({
+      id: admin.id,
+      email: admin.email,
+      role: admin.role,
+    });
+
+    res.status(201).send({ message: "Successful", user: { ...admin, token } });
+  } catch (error) {
+    console.log("error: ", error);
+    res.status(500).send({ message: "Internal server error" });
   }
+}
+
 
   /**
    * Admin Login

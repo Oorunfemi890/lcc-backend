@@ -1,7 +1,8 @@
 import db from "../../models";
 import { Op } from "sequelize";
 
-const { Member,Testimony,FollowUp,AdminUser } = db;
+const { Member, Testimony, FollowUp, AdminUser } = db;
+import MailHelper from "../helpers/email.helper";
 
 class MemberController {
   static async createMember(req, res) {
@@ -25,9 +26,7 @@ class MemberController {
         notes,
       } = req.body;
 
-      if (!firstName || !lastName || !email || !phoneNumber) {
-        return res.status(400).send({ message: "Missing required fields" });
-      }
+
 
       const exists = await Member.findOne({ where: { email } });
       if (exists) {
@@ -52,6 +51,13 @@ class MemberController {
         profilePicture,
         notes,
         memberSince: new Date(),
+      });
+
+      await MailHelper.sendMail({
+        to: newMember.email,
+        subject: "Welcome onBoard",
+        template: "welcome",
+        params: newMember,
       });
 
       return res.status(201).send({ message: "Member created successfully", data: newMember });
