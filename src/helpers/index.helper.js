@@ -29,23 +29,20 @@ class App {
     const token = jwt.sign(
       payload,
       process.env.SECRET_KEY || "charlesisawseosome",
-      {
-        expiresIn: expiresTime ? expiresTime : "2h",
-      }
+    { algorithm: 'HS256', expiresIn: '36600s' }
     );
     return token;
   }
   static decodeToken(token) {
     return new Promise((resolve, reject) => {
-      try {
-        const decoded = jwt.verify(
-          token,
-          process.env.SECRET_KEY || "charlesisawesome"
-        );
-        resolve(decoded);
-      } catch (error) {
-        reject(error);
-      }
+      jwt.verify(token, process.env.SECRET_KEY || "charlesisawesome",
+        (err, tokenData) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(tokenData);
+          }
+        });
     });
   }
 

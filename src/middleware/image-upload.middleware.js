@@ -32,25 +32,14 @@ const ImageUploadMiddleware = async (req, res, next) => {
       return res.status(500).send('Error during file upload.');
     }
 
-    //1. Validate and sanitize the uploaded file path
-    const originalName = req.file?.originalname;
-    const sanitizedName = sanitizeFilePath(originalName);
 
-    //2. Check for potentially malicious filenames
-    if (!sanitizedName || sanitizedName !== originalName) {
-      await deleteFileFromLocalStorage(pathResponse);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid filename detected'
-      });
-    }
 
-    // 3. NEW: Deep file type validation
     const fileBuffer = fs.readFileSync(req.file.path);
-    const fileTypeResult = await FileType.fromBuffer(fileBuffer);
+    const fileTypeResult = await FileType.fileTypeFromBuffer(fileBuffer);
+
 
     if (!fileTypeResult ||
-      !['image/jpeg', 'image/png', 'image/heif', 'image/heic'].includes(fileTypeResult.mime)) {
+      !['image/jpeg', 'image/png', 'image/heif', 'image/heic', 'image/webp'].includes(fileTypeResult.mime)) {
       await deleteFileFromLocalStorage(pathResponse);
       return res.status(400).json({
         success: false,
@@ -89,7 +78,7 @@ const ImageUploadMiddleware = async (req, res, next) => {
     }
 
     const fileExtension = req.file.originalname.split('.').pop().toLowerCase();
-    const extensionToUse = fileExtensionConstant.ALLOWED_IMAGE_EXTENSIONS.includes(fileExtension)
+    const extensionToUse = fileExtensionConstant.VALID_IMAGE_MINE_TYPES.includes(fileExtension)
       ? fileExtension
       : fileExtensionConstant.DEFAULT_IMAGE_EXTENSION;
 
@@ -107,8 +96,6 @@ const ImageUploadMiddleware = async (req, res, next) => {
     const results = await cloudinary.uploader.upload(localFilePath)
 
     await handleCloudinaryFileUpload(fileSizeInMB, isHeifImage, localFilePath, pathResponse, req);
-
-
     // Store the file URL in the req object for access in the route handler
     req.fileUrl = results.secure_url;
 
@@ -119,7 +106,7 @@ const ImageUploadMiddleware = async (req, res, next) => {
       logger.warn(err);
       return res.status(400).send({ message: 'File size cannot be larger than 10 MB' });
     }
-    res.status(400).send(err.message);
+    res.status(400).send({message: err.message});
   }
 };
 

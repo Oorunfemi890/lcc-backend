@@ -4,6 +4,7 @@ import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
 import  validateRequest  from "../middleware/validate-request.middleware";
 import ProgramSchema from "../schema/program";
+import ImageUploadMiddleware from '../middleware/image-upload.middleware'
 
 const router = express.Router();
 
@@ -20,6 +21,7 @@ router.post(
   "/",
   handleErrorAsync(AuthMiddleware.verifyToken),
   handleErrorAsync(AuthMiddleware.isAdmin),
+  ImageUploadMiddleware,
   validateRequest(ProgramSchema.programCreate),
   handleErrorAsync(ProgramController.createProgram)
 );
@@ -34,6 +36,12 @@ router.get(
   "/",
   handleErrorAsync(AuthMiddleware.verifyToken),
   handleErrorAsync(AuthMiddleware.isAdmin),
+  validateRequest(ProgramSchema.programGetAll),
+  handleErrorAsync(ProgramController.findAllProgram)
+);
+
+router.get(
+  "/upcoming",
   validateRequest(ProgramSchema.programGetAll),
   handleErrorAsync(ProgramController.findAllProgram)
 );

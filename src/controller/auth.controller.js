@@ -70,7 +70,6 @@ static async createAdmin(req, res) {
     try {
       const { email, password } = req.body;
       const user = await AdminUser.findOne({ where: { email }, raw: true });
-      logger.info(user)
       if (!user)
         return res.status(404).send({ message: "Wrong email/password combination" });
 
@@ -86,7 +85,7 @@ static async createAdmin(req, res) {
       return res.status(200).send({ user: { ...user, token } });
     } catch (error) {
       logger.error(error)
-      res.status(500).send({ message: "Internal server error" });
+      res.status(500).send({ message: error.message });
     }
   }
 

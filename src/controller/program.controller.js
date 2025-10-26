@@ -1,12 +1,13 @@
 // controllers/programController.js
 "use strict";
-const { Program } = require("../../models");
+import db from "../../models";
+const { Program } = db
 
 class ProgramController {
   // Create Program
   static async createProgram(req, res) {
     try {
-      const program = await Program.create(req.body);
+      const program = await Program.create({imageUrl: req.fileUrl, ...req.body});
       return res.status(201).json(program);
     } catch (error) {
       return res.status(400).json({ error: error.message });

@@ -1,7 +1,7 @@
-require("dotenv").config(); // this is important!
+require("dotenv").config();
 
 module.exports = {
-  development: {
+  local: {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
@@ -15,11 +15,17 @@ module.exports = {
     host: "127.0.0.1",
     dialect: "mysql",
   },
-  production: {
+  development: {
     username: process.env.DB_USERNAME_PROD,
     password: process.env.DB_PASSWORD_PROD,
     database: process.env.DB_DATABASE_PROD,
-    host: process.env.DB_HOST_PROD,
+    host: process.env.DB_HOST_PROD, 
     dialect: "postgres",
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false 
+      }
+    }
   },
 };
