@@ -1,16 +1,16 @@
 import App from "../helpers/index.helper";
 
 class AuthMiddleWare {
-  static ADMIN_ROLES = ["SUPER ADMIN", "ADMIN"];
-  static SUPER_ADMIN_ROLES = ["SUPER ADMIN"];
+  static ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
+  static SUPER_ADMIN_ROLES = ["SUPER_ADMIN"];
 
   static async verifyToken(req, res, next) {
     try {
       const token = req.headers["authorization"];
-
       if (!token)
         return res.status(401).send({ message: "Authorization failed" });
       const user = await App.decodeToken(token);
+
       req.user = user;
       next();
     } catch (error) {
