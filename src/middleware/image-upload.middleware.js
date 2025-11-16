@@ -1,12 +1,12 @@
-require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const FileType = require('file-type');
-const { uploadFileLocalStorage, deleteFileFromLocalStorage } = require('../helpers/multer.helper.js');
-const { logger } = require('../logger/winston.js');
-const resizeImage = require('../helpers/image-resize.helper.js');
-const fileExtensionConstant = require('../constant/file-type.constant.js');
+import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import FileType from 'file-type';
+import { uploadFileLocalStorage, deleteFileFromLocalStorage } from '../helpers/multer.helper.js';
+import { logger } from '../logger/winston.js';
+import resizeImage from '../helpers/image-resize.helper.js';
+import { DEFAULT_IMAGE_EXTENSION, MAX_IMAGE_FILE_SIZE_IN_MB, VALID_IMAGE_MINE_TYPES } from '../constant/file-type.constant.js';
 import { v2 as cloudinary } from 'cloudinary'
 
 // Ensure temp directory exists
@@ -67,7 +67,7 @@ const ImageUploadMiddleware = async (req, res, next) => {
     const fileSizeInBytes = fs.statSync(localFilePath).size;
     const fileSizeInMB = fileSizeInBytes / (1024 * 1024);
 
-    if (fileSizeInMB > fileExtensionConstant.MAX_IMAGE_FILE_SIZE_IN_MB) {
+    if (fileSizeInMB > MAX_IMAGE_FILE_SIZE_IN_MB) {
       const fileSizeResponse = await handleFileSize(localFilePath);
       if (fileSizeResponse.isError) {
         return res.status(fileSizeResponse.statusCode)
@@ -78,9 +78,9 @@ const ImageUploadMiddleware = async (req, res, next) => {
     }
 
     const fileExtension = req.file.originalname.split('.').pop().toLowerCase();
-    const extensionToUse = fileExtensionConstant.VALID_IMAGE_MINE_TYPES.includes(fileExtension)
+    const extensionToUse = VALID_IMAGE_MINE_TYPES.includes(fileExtension)
       ? fileExtension
-      : fileExtensionConstant.DEFAULT_IMAGE_EXTENSION;
+      : DEFAULT_IMAGE_EXTENSION;
 
     const key = uuidv4() + '.' + extensionToUse;
 
@@ -106,7 +106,7 @@ const ImageUploadMiddleware = async (req, res, next) => {
       logger.warn(err);
       return res.status(400).send({ message: 'File size cannot be larger than 10 MB' });
     }
-    res.status(400).send({message: err.message});
+    res.status(400).send({ message: err.message });
   }
 };
 

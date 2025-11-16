@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run build && npm run migrate && npm run migrate-seed && node start ./dist/index.js",
+    "start": "npm run build && npm run migrate && npm run migrate-seed && node ./dist/index.js",
     "dev": "npm run migrate && npm run migrate-seed && nodemon --exec babel-node ./src/index.js",
     "build": "babel src -d dist",
     "migrate": "npx sequelize-cli db:migrate",
