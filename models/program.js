@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       category: {
         type: DataTypes.ENUM,
-        values: ['youth', 'children', 'bible_study', 'fellowship', 'outreach', 'prayer', 'special_event', 'ministry'],
+        values: ['youth', 'children', 'bible_study', 'sunday_fellowship', 'outreach', 'prayer', 'special_event', 'ministry'],
         allowNull: false
       },
       targetAudience: {

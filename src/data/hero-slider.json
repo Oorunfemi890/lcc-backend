@@ -1,0 +1,26 @@
+[
+  {
+    "id": "slide-1",
+    "title": "Welcome to Liberty Christian Centre",
+    "subtitle": "A place of worship, fellowship, and spiritual growth",
+    "cta": "Listen to God's Messages",
+    "ctaIcon": "🎧",
+    "image": "https://res.cloudinary.com/dwlsoqntp/image/upload/v1763250472/wexmyjarpveeoa9bdfty.png"
+  },
+  {
+    "id": "slide-2",
+    "title": "Sunday Worship Service",
+    "subtitle": "Join us every Sunday at 8:00 AM - 11:00 AM for powerful worship Service and teaching",
+    "cta": "Plan Your Visit",
+    "ctaIcon": "📅",
+    "image": "https://res.cloudinary.com/dwlsoqntp/image/upload/v1763251284/l5bgfkatvqyygkkyvls0.jpg"
+  },
+  {
+    "id": "slide-3",
+    "title": "Growing in Faith Together",
+    "subtitle": "Experience God's love and find your place in our faith in the lordship of Jesus Christ",
+    "cta": "Join Our Family",
+    "ctaIcon": "❤️",
+    "image": "https://res.cloudinary.com/dwlsoqntp/image/upload/v1763251444/zr1utljh040yktgkdoyn.jpg"
+  }
+]
