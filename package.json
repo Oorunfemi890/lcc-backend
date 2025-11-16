@@ -37,7 +37,7 @@
     "dotenv": "^10.0.0",
     "ejs-promise": "^0.3.3",
     "express": "^4.17.1",
-    "file-type": "^21.0.0",
+    "file-type": "^16.5.4",
     "joi": "^17.4.2",
     "jsonwebtoken": "^8.5.1",
     "mailgun-js": "^0.22.0",
