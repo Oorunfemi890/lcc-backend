@@ -21,7 +21,7 @@ module.exports = {
           "youth",
           "children",
           "bible_study",
-          "fellowship",
+          "sunday_fellowship",
           "outreach",
           "prayer",
           "special_event",

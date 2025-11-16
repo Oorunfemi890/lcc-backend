@@ -7,6 +7,7 @@
         programGetAll: require('./program-get-all.schema'),
         programById: require('./program-by-id.schema'),
         programUpdate: require('./program-update.schema'),
+        deleteProgram: require('./program-delete.schema'),
     };
 
 })();

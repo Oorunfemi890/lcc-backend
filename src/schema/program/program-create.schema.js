@@ -4,7 +4,7 @@ const programCreate = {
     body: Joi.object({
         name: Joi.string().min(3).max(255).required(),
         description: Joi.string().allow("", null),
-        category: Joi.string().valid('youth', 'children', 'bible_study', 'fellowship', 'outreach', 'prayer', 'special_event', 'ministry').required(),
+        category: Joi.string().valid('youth', 'children', 'bible_study', 'sunday_fellowship', 'outreach', 'prayer', 'special_event', 'ministry').required(),
         frequency: Joi.string().valid('weekly', 'monthly', 'quarterly', 'annually', 'one_time').required(),
         startDate: Joi.date().required(),
         endDate: Joi.date().min(Joi.ref("startDate")).required(),

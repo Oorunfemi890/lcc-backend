@@ -5,15 +5,17 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run build && NODE_ENV=production npm run migrate && NODE_ENV=production npm run migrate-seed && NODE_ENV=production pm2 start ./dist/index.js --name RELATIONGIFT-SERVER",
-    "dev": "npm run migrate && npm run migrate-seed-dev && nodemon --exec babel-node ./src/index.js",
+    "start": "npm run build && npm run migrate && npm run migrate-seed && node start ./dist/index.js",
+    "dev": "npm run migrate && npm run migrate-seed && nodemon --exec babel-node ./src/index.js",
     "build": "babel src -d dist",
     "migrate": "npx sequelize-cli db:migrate",
-    "migrate-seed": "NODE_ENV=production&& npx sequelize-cli db:seed:all",
-    "migrate-seed-dev": "npx sequelize-cli db:seed:all",
+    "migrate-seed": "npx sequelize-cli db:seed:all",
     "make-migration": "npx sequelize-cli migration:generate --name",
     "model-generate": "npx sequelize-cli model:generate --name",
-    "db-create": "npx sequelize-cli db:create"
+    "db-create": "npx sequelize-cli db:create",
+    "drop_db": "npx sequelize-cli db:create",
+    "revert-migration": "npx sequelize-cli db:migrate:undo",
+    "revert-all-migration": "npx sequelize-cli db:migrate:undo:all"
   },
   "engines": {
     "node": "20.18.3"

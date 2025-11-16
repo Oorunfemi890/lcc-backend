@@ -10,11 +10,12 @@ const customExpress = require("../validation/express.validation");
 import authRoute from "../routes/auth.route";
 import member from '../routes/member.route';
 import celebrant from '../routes/member.route'
-import firsttimer from '../routes/first.timer.route';
+import firsttimer from '../routes/first-timer.route';
 import followup from '../routes/follow-up.route';
 import program from '../routes/program.route';
 import service from '../routes/service.route';
 import testimony from '../routes/testimony.route';
+import heroslide from '../routes/hero-slide.route'
 
 module.exports = function () {
   app.use(bodyParser.json());
@@ -28,6 +29,8 @@ module.exports = function () {
   app.use("/api/v1/program", program);
   app.use("/api/v1/service", service);
   app.use("/api/v1/testimony", testimony);
+  app.use("/api/v1/hero-slider",heroslide);
+
 
 
   app.set('view engine', 'ejs');
