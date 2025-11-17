@@ -6,6 +6,7 @@ const createCelebrant = {
         celebrationType: Joi.string().valid("birthday", "anniversary", "graduation", "wedding", "other").optional(),
         celebrationDate: Joi.date().iso().optional(),
         contact: Joi.string().max(100).optional(),
+        email: Joi.string().email().required(),
         contactType: Joi.string().valid("phone", "email", "social", "other").optional(),
         message: Joi.string().max(1000).optional(),
         isPublic: Joi.boolean().optional(),

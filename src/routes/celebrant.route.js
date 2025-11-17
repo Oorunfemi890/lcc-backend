@@ -18,8 +18,8 @@ const router = express.Router();
  */
 router.post(
   "/",
-  validateRequest(CelebrantSchema.createCelebrant),
   ImageUploadMiddleware,
+  validateRequest(CelebrantSchema.createCelebrant),
   handleErrorAsync(CelebrantController.createCelebrant)
 );
 
