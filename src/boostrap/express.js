@@ -9,7 +9,7 @@ const customExpress = require("../validation/express.validation");
 
 import authRoute from "../routes/auth.route";
 import member from '../routes/member.route';
-import celebrant from '../routes/member.route'
+import celebrant from '../routes/celebrant.route'
 import firsttimer from '../routes/first-timer.route';
 import followup from '../routes/follow-up.route';
 import program from '../routes/program.route';

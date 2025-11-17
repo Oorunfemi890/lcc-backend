@@ -33,13 +33,10 @@ const ImageUploadMiddleware = async (req, res, next) => {
     }
 
 
-
-    const fileBuffer = fs.readFileSync(req.file.path);
-    const fileTypeResult = await FileType.fileTypeFromBuffer(fileBuffer);
-
+    const fileTypeResult = req.file.mimetype
 
     if (!fileTypeResult ||
-      !['image/jpeg', 'image/png', 'image/heif', 'image/heic', 'image/webp'].includes(fileTypeResult.mime)) {
+      !VALID_IMAGE_MINE_TYPES.includes(fileTypeResult.toLowerCase())) {
       await deleteFileFromLocalStorage(pathResponse);
       return res.status(400).json({
         success: false,

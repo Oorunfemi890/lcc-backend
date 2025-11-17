@@ -15,16 +15,11 @@ class CelebrantController {
         celebrationType,
         celebrationDate,
         contact,
-        contactType,
         message,
-        isPublic,
-        specialRequests,
-        notes,
-        submittedBy,
-        submitterContact,
-        relationship,
       } = req.body;
-      const photoUrl = req.file
+      const photoUrl = req.fileUrl
+            console.log("photoUrl: ", photoUrl);
+
       if (!name || !celebrationType || !celebrationDate || !contact) {
         return res.status(400).send({
           message:
@@ -33,25 +28,18 @@ class CelebrantController {
       }
 
       const celebrant = await Celebrant.create({
-        memberId,
         name,
         celebrationType,
         celebrationDate,
         contact,
-        contactType,
         message,
-        isPublic,
-        specialRequests,
+        specialRequests:message,
         photoUrl,
-        notes,
-        submittedBy,
-        submitterContact,
-        relationship,
       });
 
       return res
         .status(201)
-        .send({ message: "Celebrant created successfully", celebrant });
+        .send({ message: "Celebrant created successfully" });
     } catch (error) {
       console.log("Error creating celebrant: ", error);
       return res.status(500).send({ message: "Internal server error" });
