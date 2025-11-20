@@ -149,7 +149,12 @@ module.exports = (sequelize, DataTypes) => {
             notes: {
                 type: DataTypes.TEXT,
                 allowNull: true
+            },
+            securityPin: {
+                type: DataTypes.STRING,
+                allowNull: true
             }
+
         },
         {
             sequelize,

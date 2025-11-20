@@ -5,7 +5,7 @@ const { Member, Testimony, FollowUp, AdminUser } = db;
 import MailHelper from "../helpers/email.helper";
 
 class MemberController {
-  static async createMember(req, res) {
+ static async createMember(req, res) {
     try {
       const {
         firstName,
@@ -24,21 +24,53 @@ class MemberController {
         emergencyContactRelationship,
         profilePicture,
         notes,
+        pin // <- UI passes this
       } = req.body;
 
-
-
+      // check existing
       const exists = await Member.findOne({ where: { email } });
       if (exists) {
         return res.status(409).send({ message: "Member with this email already exists" });
       }
 
+      // ---------------------------------------------------------
+      // 🔐 GENERATE / VALIDATE PIN
+      // ---------------------------------------------------------
+
+      let finalPin = pin;
+
+      // If UI did not pass PIN → generate fallback PIN
+      if (!finalPin) {
+        if (email && dateOfBirth) {
+          const prefix = email.substring(0, 2).toLowerCase();
+          const dob = new Date(dateOfBirth);
+
+          const day = String(dob.getDate()).padStart(2, "0");
+          const month = String(dob.getMonth() + 1).padStart(2, "0");
+
+          finalPin = `${prefix}${day}${month}`; // e.g. jo1508
+        } else {
+          // fallback random PIN 6 digits
+          finalPin = Math.floor(100000 + Math.random() * 900000).toString();
+        }
+      }
+
+      // Validate PIN format (4–6 digits or string)
+      if (!/^[A-Za-z0-9]{4,8}$/.test(finalPin)) {
+        return res.status(400).send({ message: "PIN must be 4-8 characters or digits" });
+      }
+
+      // Hash the pin
+      const hashedPin = await bcrypt.hash(finalPin, 10);
+
+      // ---------------------------------------------------------
+      // CREATE MEMBER
+      // ---------------------------------------------------------
       const newMember = await Member.create({
         firstName,
         lastName,
         email,
         phoneNumber,
-        countryCode,
         address,
         dateOfBirth,
         maritalStatus,
@@ -51,16 +83,24 @@ class MemberController {
         profilePicture,
         notes,
         memberSince: new Date(),
+        securityPin: hashedPin // ← store hashed version
       });
 
+      // ---------------------------------------------------------
+      // SEND WELCOME EMAIL WITH TEMP PIN
+      // ---------------------------------------------------------
       await MailHelper.sendMail({
         to: newMember.email,
-        subject: "Welcome onBoard",
+        subject: "Welcome Onboard",
         template: "welcome",
-        params: newMember,
+        params: { ...newMember.dataValues, tempPin: finalPin },
       });
 
-      return res.status(201).send({ message: "Member created successfully", data: newMember });
+      return res.status(201).send({
+        message: "Member created successfully",
+        data: newMember
+      });
+
     } catch (error) {
       console.error("Error creating member:", error);
       return res.status(500).send({ message: "Internal server error" });
