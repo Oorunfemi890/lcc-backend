@@ -1,8 +1,9 @@
+// src/routes/auth.route.js - INTEGRATED AUTH ROUTES
 import express from "express";
 import AuthController from "../controller/auth.controller";
 import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
-import  validateRequest  from "../middleware/validate-request.middleware";
+import validateRequest from "../middleware/validate-request.middleware";
 import AuthSchema from "../schema/auth";
 
 const router = express.Router();
@@ -12,8 +13,8 @@ const router = express.Router();
 // ============================================
 
 /**
- * @route   POST /api/auth/admin/login
- * @desc    Admin login
+ * @route   POST /api/v1/auth/admin/login
+ * @desc    Admin login (Dashboard)
  * @access  Public
  */
 router.post(
@@ -23,8 +24,8 @@ router.post(
 );
 
 /**
- * @route   POST /api/auth/admin/forgot-password
- * @desc    Admin forgot password - sends reset email
+ * @route   POST /api/v1/auth/admin/forgot-password
+ * @desc    Request password reset
  * @access  Public
  */
 router.post(
@@ -34,35 +35,66 @@ router.post(
 );
 
 /**
- * @route   POST /api/auth/admin/verify-email
- * @desc    Verify if admin email exists
+ * @route   POST /api/v1/auth/admin/reset-password
+ * @desc    Reset password with token
  * @access  Public
  */
-// router.post(
-//   "/admin/verify-email",
-//   validateRequest(AuthSchema.verifyEmailSchema),
-//   handleErrorAsync(AuthController.verifyAdminEmail)
-// );
+router.post(
+  "/admin/reset-password",
+  validateRequest(AuthSchema.adminResetPassword),
+  handleErrorAsync(AuthController.adminResetPassword)
+);
+
+/**
+ * @route   POST /api/v1/auth/refresh
+ * @desc    Refresh access token
+ * @access  Public
+ */
+router.post(
+  "/refresh",
+  handleErrorAsync(AuthController.refresh)
+);
 
 // ============================================
 // PROTECTED ROUTES (Authentication Required)
 // ============================================
 
 /**
- * @route   POST /api/auth/admin/reset-password
- * @desc    Reset admin password (requires reset token)
- * @access  Protected (with reset token)
+ * @route   GET /api/v1/auth/verify
+ * @desc    Verify current token
+ * @access  Protected
  */
-router.post(
-  "/admin/reset-password",
+router.get(
+  "/verify",
   handleErrorAsync(AuthMiddleware.verifyToken),
-  validateRequest(AuthSchema.adminResetPassword),
-  handleErrorAsync(AuthController.adminResetPassword)
+  handleErrorAsync(AuthController.verify)
 );
 
 /**
- * @route   PUT /api/auth/admin/change-password
- * @desc    Change admin password (requires old password)
+ * @route   POST /api/v1/auth/logout
+ * @desc    Logout admin
+ * @access  Protected
+ */
+router.post(
+  "/logout",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthController.logout)
+);
+
+/**
+ * @route   GET /api/v1/auth/me
+ * @desc    Get current admin info
+ * @access  Protected
+ */
+router.get(
+  "/me",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthController.getCurrentAdmin)
+);
+
+/**
+ * @route   PUT /api/v1/auth/admin/change-password
+ * @desc    Change admin password
  * @access  Protected
  */
 router.put(
@@ -70,76 +102,6 @@ router.put(
   handleErrorAsync(AuthMiddleware.verifyToken),
   validateRequest(AuthSchema.adminChangePassword),
   handleErrorAsync(AuthController.adminChangePassword)
-);
-
-// ============================================
-// ADMIN MANAGEMENT ROUTES (Super Admin Only)
-// ============================================
-
-/**
- * @route   POST /api/auth/admin
- * @desc    Create new admin from existing member
- * @access  Protected (Super Admin only)
- */
-router.post(
-  "/admin",
-  handleErrorAsync(AuthMiddleware.verifyToken),
-  handleErrorAsync(AuthMiddleware.isSuperAdmin),
-  validateRequest(AuthSchema.createAdmin),
-  handleErrorAsync(AuthController.createAdmin)
-);
-
-/**
- * @route   GET /api/auth/admin
- * @desc    Get all admins with pagination and filters
- * @access  Protected (Super Admin only)
- * @query   page, limit, role, membershipType, active, search
- */
-router.get(
-  "/admin",
-  handleErrorAsync(AuthMiddleware.verifyToken),
-  handleErrorAsync(AuthMiddleware.isSuperAdmin),
-  validateRequest(AuthSchema.adminFindAllSchema),
-  handleErrorAsync(AuthController.findAllAdmins)
-);
-
-/**
- * @route   GET /api/auth/admin/:id
- * @desc    Get single admin by ID
- * @access  Protected (Super Admin only)
- */
-router.get(
-  "/admin/:id",
-  handleErrorAsync(AuthMiddleware.verifyToken),
-  handleErrorAsync(AuthMiddleware.isSuperAdmin),
-  validateRequest(AuthSchema.findAminById),
-  handleErrorAsync(AuthController.findOneAdmin)
-);
-
-/**
- * @route   PUT /api/auth/admin/:id
- * @desc    Update admin role and active status
- * @access  Protected (Super Admin only)
- */
-router.put(
-  "/admin/:id",
-  handleErrorAsync(AuthMiddleware.verifyToken),
-  handleErrorAsync(AuthMiddleware.isSuperAdmin),
-  validateRequest(AuthSchema.adminResetProfile),
-  handleErrorAsync(AuthController.updateAdmin)
-);
-
-/**
- * @route   DELETE /api/auth/admin/:id
- * @desc    Delete admin
- * @access  Protected (Super Admin only)
- */
-router.delete(
-  "/admin/:id",
-  handleErrorAsync(AuthMiddleware.verifyToken),
-  handleErrorAsync(AuthMiddleware.isSuperAdmin),
-  validateRequest(AuthSchema.deleteAdmin),
-  handleErrorAsync(AuthController.deleteAdmin)
 );
 
 export default router;
