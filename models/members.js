@@ -122,8 +122,27 @@ module.exports = (sequelize, DataTypes) => {
             },
             membershipType: {
                 type: DataTypes.ENUM,
-                values: ['member', 'worker', 'minister', 'pastor'],
-                defaultValue: 'member'
+                values: [
+                    'Youth',
+                    "Children's",
+                    'Choir',
+                    'Media & Audio Visual',
+                    'Ushering',
+                    'Prayer',
+                    'Outreach & Evangelism',
+                    'Hospitality',
+                    'Counseling',
+                    "Men's Fellowship",
+                    "Women's Fellowship",
+                    'Sunday School',
+                    'Other'
+                ],
+                defaultValue: 'Other'
+            },
+            ageGroup: {
+                type: DataTypes.ENUM,
+                values: ['children', 'teenager', 'adult'],
+                allowNull: true
             },
             isWorker: {
                 type: DataTypes.BOOLEAN,

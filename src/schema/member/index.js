@@ -8,6 +8,7 @@
         memberById: require('./member-by-id.schema'),
         memberUpdate: require('./member-update.schema'),
         memberBlock: require('./member-block.schema'),
+        memberLookup: require('./member-lookup.schema'),
     };
 
 })();

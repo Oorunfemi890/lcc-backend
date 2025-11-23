@@ -3,9 +3,10 @@ import { Op } from "sequelize";
 
 const { Member, Testimony, FollowUp, AdminUser } = db;
 import MailHelper from "../helpers/email.helper";
+import bcrypt from "bcryptjs";
 
 class MemberController {
- static async createMember(req, res) {
+  static async createMember(req, res) {
     try {
       const {
         firstName,
@@ -18,50 +19,56 @@ class MemberController {
         maritalStatus,
         occupation,
         interests,
-        membershipType = "member",
+        membershipType = "Other",
         emergencyContactName,
         emergencyContactPhone,
         emergencyContactRelationship,
-        profilePicture,
         notes,
-        pin // <- UI passes this
+        securityPin // <- UI passes this
       } = req.body;
 
-      // check existing
-      const exists = await Member.findOne({ where: { email } });
-      if (exists) {
-        return res.status(409).send({ message: "Member with this email already exists" });
+      // Handle profile picture upload
+      const profilePicture = req?.fileUrl
+      const normalizedEmail = email ? email.toLowerCase().trim() : null;
+      const normalizedPhone = phoneNumber ? phoneNumber.trim() : null;
+
+      const memberExists = await Member.findOne({
+        where: {
+          [Op.or]: [
+            { email: normalizedEmail },
+            { phoneNumber: normalizedPhone }
+          ]
+        }
+      });
+
+      if (memberExists) {
+        return res.status(409).send({ message: "Member with this email or phone number already exists" });
       }
 
-      // ---------------------------------------------------------
-      // 🔐 GENERATE / VALIDATE PIN
-      // ---------------------------------------------------------
+      let ageGroup = null;
+      if (dateOfBirth) {
+        const dob = new Date(dateOfBirth);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const monthDiff = today.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+          age--;
+        }
 
-      let finalPin = pin;
-
-      // If UI did not pass PIN → generate fallback PIN
-      if (!finalPin) {
-        if (email && dateOfBirth) {
-          const prefix = email.substring(0, 2).toLowerCase();
-          const dob = new Date(dateOfBirth);
-
-          const day = String(dob.getDate()).padStart(2, "0");
-          const month = String(dob.getMonth() + 1).padStart(2, "0");
-
-          finalPin = `${prefix}${day}${month}`; // e.g. jo1508
+        if (age < 10) {
+          ageGroup = "children";
+        } else if (age >= 10 && age <= 19) {
+          ageGroup = "teenager";
         } else {
-          // fallback random PIN 6 digits
-          finalPin = Math.floor(100000 + Math.random() * 900000).toString();
+          ageGroup = "adult";
         }
       }
 
-      // Validate PIN format (4–6 digits or string)
-      if (!/^[A-Za-z0-9]{4,8}$/.test(finalPin)) {
-        return res.status(400).send({ message: "PIN must be 4-8 characters or digits" });
-      }
-
-      // Hash the pin
-      const hashedPin = await bcrypt.hash(finalPin, 10);
+      // Hash the pin + phoneNumber + dateOfBirth
+      // Ensure dateOfBirth is formatted consistently if used in hash
+      const dobString = dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : '';
+      const stringToHash = `${securityPin}${phoneNumber}${dobString}`;
+      const hashedPin = await bcrypt.hash(stringToHash, 10);
 
       // ---------------------------------------------------------
       // CREATE MEMBER
@@ -69,7 +76,7 @@ class MemberController {
       const newMember = await Member.create({
         firstName,
         lastName,
-        email,
+        email: normalizedEmail,
         phoneNumber,
         address,
         dateOfBirth,
@@ -77,6 +84,7 @@ class MemberController {
         occupation,
         interests,
         membershipType,
+        ageGroup,
         emergencyContactName,
         emergencyContactPhone,
         emergencyContactRelationship,
@@ -86,14 +94,11 @@ class MemberController {
         securityPin: hashedPin // ← store hashed version
       });
 
-      // ---------------------------------------------------------
-      // SEND WELCOME EMAIL WITH TEMP PIN
-      // ---------------------------------------------------------
       await MailHelper.sendMail({
         to: newMember.email,
         subject: "Welcome Onboard",
         template: "welcome",
-        params: { ...newMember.dataValues, tempPin: finalPin },
+        params: { ...newMember.dataValues, tempPin: securityPin },
       });
 
       return res.status(201).send({
@@ -103,6 +108,50 @@ class MemberController {
 
     } catch (error) {
       console.error("Error creating member:", error);
+      return res.status(500).send({ message: "Internal server error" });
+    }
+  }
+
+  // ✅ Lookup Member by Hash
+  static async lookupMember(req, res) {
+    try {
+      const { phoneNumber, dateOfBirth, securityPin } = req.body;
+
+      // 1. Find member by phone number
+      const member = await Member.findOne({
+        where: { phoneNumber: phoneNumber.trim() }
+      });
+
+      if (!member) {
+        return res.status(404).send({ message: "Member not found" });
+      }
+
+      // 2. Reconstruct the string to verify: securityPin + phoneNumber + dobString
+      // Note: We must use the same formatting logic as in createMember
+      const dobString = dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : '';
+      const stringToVerify = `${securityPin}${phoneNumber}${dobString}`;
+
+      // 3. Compare hash
+      // member.securityPin stores the hash
+      if (!member.securityPin) {
+        // If for some reason securityPin is null (legacy records?), we can't verify.
+        return res.status(404).send({ message: "Member not found or security pin not set" });
+      }
+
+      const isMatch = await bcrypt.compare(stringToVerify, member.securityPin);
+
+      if (!isMatch) {
+        return res.status(404).send({ message: "Member not found" }); // Generic error for security
+      }
+
+      // 4. Return member data
+      return res.status(200).send({
+        message: "Member verified successfully",
+        data: member
+      });
+
+    } catch (error) {
+      console.error("Error looking up member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
