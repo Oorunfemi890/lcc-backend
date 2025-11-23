@@ -40,6 +40,19 @@ router.post(
 );
 
 /**
+ * @route   POST /api/member/child
+ * @desc    Create new child member with parent relationship
+ * @access  Protected (Admin)
+ */
+router.post(
+  "/add-child",
+  ImageUploadMiddleware,
+  validateRequest(MemberSchema.memberCreateChild),
+  handleErrorAsync(MemberController.createChildMember)
+);
+
+
+/**
  * @route   GET /api/member
  * @desc    Get all members with pagination and filters
  * @access  Protected (Admin)
@@ -53,11 +66,23 @@ router.get(
   handleErrorAsync(MemberController.getAllMembers)
 );
 
+
+/**
+ * @route   GET /api/member/children
+ * @desc    Get children of a member
+ * @access  Protected (Admin)
+ * @query   parentId
+ */
+router.get(
+  "/children",
+  validateRequest(MemberSchema.memberGetChildren),
+  handleErrorAsync(MemberController.getMemberChildren)
+);
+
 /**
  * @route   GET /api/member/:id
  * @desc    Get single member by ID
  * @access  Protected (Admin)
- */
 router.get(
   "/:id",
   handleErrorAsync(AuthMiddleware.verifyToken),

@@ -24,6 +24,17 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'memberId',
                 as: 'testimonies'
             });
+
+            // Self-referential association for parent-child relationships
+            Member.belongsTo(models.Member, {
+                foreignKey: 'parentId',
+                as: 'parent'
+            });
+
+            Member.hasMany(models.Member, {
+                foreignKey: 'parentId',
+                as: 'children'
+            });
         }
 
     }
@@ -53,7 +64,6 @@ module.exports = (sequelize, DataTypes) => {
             email: {
                 type: DataTypes.STRING,
                 allowNull: false,
-                unique: true,
                 validate: {
                     isEmail: true
                 }
@@ -81,6 +91,10 @@ module.exports = (sequelize, DataTypes) => {
                     isDate: true,
                     isBefore: new Date().toISOString().split('T')[0] // Must be in the past
                 }
+            },
+            gender: {
+                type: DataTypes.ENUM('male', 'female', 'other'),
+                allowNull: true
             },
             maritalStatus: {
                 type: DataTypes.ENUM,
@@ -172,6 +186,16 @@ module.exports = (sequelize, DataTypes) => {
             securityPin: {
                 type: DataTypes.STRING,
                 allowNull: true
+            },
+            parentId: {
+                type: DataTypes.UUID,
+                allowNull: true,
+                references: {
+                    model: 'Members',
+                    key: 'id'
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'SET NULL'
             }
 
         },
@@ -181,7 +205,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true, // Adds createdAt and updatedAt
             indexes: [
                 {
-                    unique: true,
+                    unique: false,
                     fields: ['email']
                 },
                 {

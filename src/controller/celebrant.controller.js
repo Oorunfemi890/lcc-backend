@@ -18,7 +18,6 @@ class CelebrantController {
         message,
       } = req.body;
       const photoUrl = req.fileUrl
-            console.log("photoUrl: ", photoUrl);
 
       if (!name || !celebrationType || !celebrationDate || !contact) {
         return res.status(400).send({

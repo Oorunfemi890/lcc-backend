@@ -19,7 +19,7 @@ module.exports = {
       email: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true,
+        unique: false,
       },
       phoneNumber: {
         type: Sequelize.STRING,
@@ -97,11 +97,11 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),s
       },
     });
 
-    await queryInterface.addIndex("Members", ["email"], { unique: true });
+    await queryInterface.addIndex("Members", ["email"], { unique: false });
     await queryInterface.addIndex("Members", ["firstName", "lastName"]);
     await queryInterface.addIndex("Members", ["memberSince"]);
     await queryInterface.addIndex("Members", ["active"]);
