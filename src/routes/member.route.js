@@ -2,11 +2,26 @@ import express from "express";
 import MemberController from "../controller/member.controller";
 import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
-import  validateRequest  from "../middleware/validate-request.middleware";
+import validateRequest from "../middleware/validate-request.middleware";
 import MemberSchema from "../schema/member";
 import ImageUploadMiddleware from '../middleware/image-upload.middleware'
 
 const router = express.Router();
+
+// ============================================
+// PUBLIC ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/member/lookup
+ * @desc    Lookup member by hash (Phone + DOB + PIN)
+ * @access  Public
+ */
+router.post(
+  "/lookup",
+  validateRequest(MemberSchema.memberLookup),
+  handleErrorAsync(MemberController.lookupMember)
+);
 
 // ============================================
 // PROTECTED ROUTES (Admin Only)
@@ -19,8 +34,8 @@ const router = express.Router();
  */
 router.post(
   "/",
-  validateRequest(MemberSchema.memberCreate),
   ImageUploadMiddleware,
+  validateRequest(MemberSchema.memberCreate),
   handleErrorAsync(MemberController.createMember)
 );
 
