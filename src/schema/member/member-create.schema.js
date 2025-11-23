@@ -9,6 +9,7 @@ const memberCreate = {
         countryCode: Joi.string().default("+234"),
         address: Joi.string().allow(null, ""),
         dateOfBirth: Joi.date().allow(null),
+        gender: Joi.string().valid("male", "female", "other").allow(null),
         maritalStatus: Joi.string().valid("single", "married", "divorced", "widowed").allow(null),
         occupation: Joi.string().allow(null, ""),
         interests: Joi.array().items(Joi.string()).allow(null),

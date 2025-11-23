@@ -16,6 +16,7 @@ class MemberController {
         countryCode = "+234",
         address,
         dateOfBirth,
+        gender,
         maritalStatus,
         occupation,
         interests,
@@ -24,7 +25,7 @@ class MemberController {
         emergencyContactPhone,
         emergencyContactRelationship,
         notes,
-        securityPin // <- UI passes this
+        securityPin
       } = req.body;
 
       // Handle profile picture upload
@@ -80,6 +81,7 @@ class MemberController {
         phoneNumber,
         address,
         dateOfBirth,
+        gender,
         maritalStatus,
         occupation,
         interests,
@@ -91,7 +93,8 @@ class MemberController {
         profilePicture,
         notes,
         memberSince: new Date(),
-        securityPin: hashedPin // ← store hashed version
+        securityPin: hashedPin, // ← store hashed version
+        countryCode,
       });
 
       await MailHelper.sendMail({
@@ -108,6 +111,135 @@ class MemberController {
 
     } catch (error) {
       console.error("Error creating member:", error);
+      return res.status(500).send({ message: "Internal server error" });
+    }
+  }
+
+  // ✅ Create Child Member
+  static async createChildMember(req, res) {
+    try {
+      const {
+        parentId, // Optional: if not provided, will use parentEmail and parentPhoneNumber
+        firstName,
+        lastName,
+        dateOfBirth,
+        gender,
+        membershipType,
+
+      } = req.body;
+
+      // Handle profile picture upload
+      const profilePicture = req?.fileUrl;
+
+      // Verify that the provided parentId exists
+      const parentMember = await Member.findByPk(parentId);
+      if (!parentMember) {
+        return res.status(404).send({ message: "Parent member not found with provided ID" });
+      }
+
+      // Check if child with same name already exists for this parent
+      const childExists = await Member.findOne({
+        where: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          parentId: parentId
+        }
+      });
+
+      if (childExists) {
+        return res.status(409).send({
+          message: `A child named ${firstName} ${lastName} already exists for this parent`
+        });
+      }
+
+      // Calculate age group
+      let ageGroup = null;
+      if (dateOfBirth) {
+        const dob = new Date(dateOfBirth);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const monthDiff = today.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+          age--;
+        }
+
+        if (age < 10) {
+          ageGroup = "children";
+        } else if (age >= 10 && age <= 19) {
+          ageGroup = "teenager";
+        } else {
+          ageGroup = "adult";
+        }
+      }
+
+      // Hash the pin + phoneNumber + dateOfBirth
+      const dobString = dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : '';
+      const stringToHash = `${process.env.DEFAULT_PIN}${parentMember.phoneNumber}${dobString}`;
+      const hashedPin = await bcrypt.hash(stringToHash, 10);
+
+      // Create child member with parentId
+      const newChildMember = await Member.create({
+        firstName,
+        lastName,
+        email: parentMember.email,
+        phoneNumber: parentMember.phoneNumber,
+        address: parentMember.address,
+        countryCode: parentMember.countryCode,
+        dateOfBirth,
+        gender,
+        maritalStatus: "single",
+        occupation: "student",
+        membershipType,
+        ageGroup,
+        emergencyContactName: parentMember.emergencyContactName,
+        emergencyContactPhone: parentMember.emergencyContactPhone,
+        emergencyContactRelationship: parentMember.emergencyContactRelationship,
+        profilePicture,
+        memberSince: new Date(),
+        securityPin: hashedPin,
+        parentId
+      });
+
+      await MailHelper.sendMail({
+        to: newChildMember.email,
+        subject: "Welcome Onboard",
+        template: "welcome",
+        params: { ...newChildMember.dataValues, tempPin: process.env.DEFAULT_PIN },
+      });
+
+      return res.status(201).send({
+        message: "Child member created successfully",
+        data: newChildMember
+      });
+
+    } catch (error) {
+      console.error("Error creating child member:", error);
+      return res.status(500).send({ message: "Internal server error" });
+    }
+  }
+
+
+
+  // ✅ Get Member Children
+  static async getMemberChildren(req, res) {
+    try {
+      const { parentId } = req.query;
+
+      if (!parentId) {
+        return res.status(400).send({ message: "Parent ID is required" });
+      }
+
+      const children = await Member.findAll({
+        where: { parentId },
+        order: [["createdAt", "DESC"]]
+      });
+
+      return res.status(200).send({
+        message: "Children fetched successfully",
+        data: children
+      });
+    } catch (error) {
+      console.error("Error fetching member children:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }

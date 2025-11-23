@@ -1,24 +1,31 @@
 const path = require("path");
 const ejs = require("ejs-promise");
-import MailGun from "mailgun-js";
+const nodemailer = require("nodemailer");
 
 class MailService {
   filename;
   params;
-  mailgun;
+  transporter;
   from;
   to;
   subject;
+
   constructor(from, to, subject, filename, params) {
     this.filename = filename;
     this.params = params;
-    this.mailgun = MailGun({
-      apiKey: process.env.MAILGUN_API_KEY,
-      domain: process.env.MAILGUN_DOMAIN,
-    });
     this.from = from;
     this.to = to;
     this.subject = subject;
+
+    this.transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
   }
 
   generateHtml() {
@@ -26,7 +33,7 @@ class MailService {
       try {
         const file = path.join(
           __dirname,
-          `../../templates/${this.filename}.ejs`
+          `../../templates/${this.filename}.template.ejs`
         );
         if (!file) {
           throw new Error(
@@ -35,7 +42,8 @@ class MailService {
         }
         return await ejs.renderFile(file, this.params, {}, (error, result) => {
           if (error) {
-            exits.error(error);
+            console.error(error);
+            reject(error);
           }
           return result
             .then(function (data) {
@@ -56,20 +64,20 @@ class MailService {
     return new Promise(async (resolve, reject) => {
       try {
         const html = await this.generateHtml();
-        var data = {
+        const mailOptions = {
           from: this.from,
           to: this.to,
           subject: this.subject,
           html,
         };
 
-        this.mailgun.messages().send(data, function (error, body) {
+        this.transporter.sendMail(mailOptions, function (error, info) {
           if (error) {
-            console.log("callehhhh ",error);
+            console.log("Email send error: ", error);
             return reject({ message: "failed", error });
           }
-          console.log("success ooo", body);
-          resolve({ message: "success" });
+          console.log("Email sent: ", info.response);
+          resolve({ message: "success", info });
         });
       } catch (error) {
         reject(error);
