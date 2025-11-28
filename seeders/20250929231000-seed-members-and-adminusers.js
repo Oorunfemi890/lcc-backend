@@ -21,7 +21,7 @@ module.exports = {
           firstName: "Ibkun",
           lastName: "Odeyemi",
           email: "odeyemiibukuna@gmail.com",
-          phoneNumber: "+2348132362341",
+          phoneNumber: "08132362341",
           countryCode: "+234",
           address: "No 73 Modupe Young Thomas Estate, Ajah, Lagos",
           memberSince: new Date(),
@@ -49,7 +49,7 @@ module.exports = {
         {
           id: Sequelize.Utils.toDefaultValue(Sequelize.UUIDV4()),
           email: "odeyemiibukuna@gmail.com",
-          password:bcrypt.hashSync("hashedpassword123!", 8),
+          password: bcrypt.hashSync("hashedpassword123!", 8),
           active: true,
           role: "SUPER_ADMIN",
           memberId,

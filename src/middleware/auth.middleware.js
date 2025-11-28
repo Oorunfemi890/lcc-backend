@@ -6,7 +6,7 @@ class AuthMiddleWare {
 
   static async verifyToken(req, res, next) {
     try {
-      const token = req.headers["authorization"];
+      const token = req.headers["authorization"].split(" ")[1] || req.headers["authorization"];
       if (!token)
         return res.status(401).send({ message: "Authorization failed" });
       const user = await App.decodeToken(token);
@@ -20,7 +20,7 @@ class AuthMiddleWare {
 
   static async tokenOptional(req, res, next) {
     try {
-      const token = req.headers["authorization"];
+      const token = req.headers["authorization"].split(" ")[1] || req.headers["authorization"];
       let user = null;
       if (token) user = await App.decodeToken(token);
 
@@ -48,30 +48,30 @@ class AuthMiddleWare {
     }
   }
 
-static async isSuperAdmin(req, res, next) {
-  try {
-    const user = req.user;
+  static async isSuperAdmin(req, res, next) {
+    try {
+      const user = req.user;
 
-    if (!user) {
-      return res.status(401).json({ message: "Authorization failed" });
+      if (!user) {
+        return res.status(401).json({ message: "Authorization failed" });
+      }
+
+      if (!user.role) {
+        return res.status(401).json({ message: "User role not found" });
+      }
+
+      if (AuthMiddleWare.SUPER_ADMIN_ROLES.includes(user.role)) {
+        return next();
+      }
+
+      return res.status(403).json({
+        message: "Insufficient authorization, please contact administrator",
+      });
+
+    } catch (error) {
+      return res.status(500).json({ message: "Authorization failed" });
     }
-
-    if (!user.role) {
-      return res.status(401).json({ message: "User role not found" });
-    }
-
-    if (AuthMiddleWare.SUPER_ADMIN_ROLES.includes(user.role)) {
-      return next();
-    }
-
-    return res.status(403).json({
-      message: "Insufficient authorization, please contact administrator",
-    });
-
-  } catch (error) {
-    return res.status(500).json({ message: "Authorization failed" });
   }
-}
 
 
   static async verifyTokenByID(req, res, next) {

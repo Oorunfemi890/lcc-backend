@@ -29,7 +29,7 @@ class App {
     const token = jwt.sign(
       payload,
       process.env.SECRET_KEY || "charlesisawseosome",
-    { algorithm: 'HS256', expiresIn: '36600s' }
+      { algorithm: 'HS256', expiresIn: "1d" }
     );
     return token;
   }

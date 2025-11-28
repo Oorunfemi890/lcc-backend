@@ -83,6 +83,64 @@ class ServiceController {
       return res.status(500).json({ error: error.message });
     }
   }
+
+  // Group Services by Day of Week
+  static async getServicesByDayOfWeek(req, res) {
+    try {
+      const { active, serviceType } = req.query;
+
+      const where = {};
+      if (active !== undefined) where.active = active === "true";
+      if (serviceType) where.serviceType = serviceType;
+
+      // Get all services grouped by dayOfWeek
+      const services = await Service.findAll({
+        where,
+        order: [["dayOfWeek", "ASC"], ["startTime", "ASC"]],
+      });
+
+      // Define day order for proper sorting
+      const dayOrder = ['sunday', 'tuesday', 'thursday'];
+
+      // Group services by day of week
+      const groupedByDay = services.reduce((acc, service) => {
+        const day = service.dayOfWeek || 'unscheduled';
+        if (!acc[day]) {
+          acc[day] = [];
+        }
+        acc[day].push(service);
+        return acc;
+      }, {});
+
+      // Sort the result by day order
+      const sortedResult = {};
+      dayOrder.forEach(day => {
+        if (groupedByDay[day]) {
+          sortedResult[day] = groupedByDay[day];
+        }
+      });
+
+      // Add unscheduled services at the end if any
+      if (groupedByDay['unscheduled']) {
+        sortedResult['unscheduled'] = groupedByDay['unscheduled'];
+      }
+
+      // Calculate counts
+      const summary = Object.keys(sortedResult).map(day => ({
+        day,
+        count: sortedResult[day].length,
+        services: sortedResult[day]
+      }));
+
+      return res.json({
+        groupedByDay: sortedResult,
+        summary,
+        totalServices: services.length
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
 }
 
 module.exports = ServiceController;
