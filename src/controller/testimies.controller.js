@@ -13,18 +13,34 @@ class TestimonyController {
     }
   }
 
+  // Create a testimony (Member Self-Service)
+  static async createMemberTestimony(req, res) {
+    try {
+      // Get member ID from JWT token
+      const memberId = req.user.memberId;
+
+      const testimony = await Testimony.create({
+        ...req.body,
+        memberId
+      });
+      return res.status(201).json({ message: "Testimony submitted successfully", data: testimony });
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
+
   // Get all testimonies (with filters + pagination)
   static async findAllTestimonies(req, res) {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        category, 
-        isPublic, 
-        sharedInService, 
-        active, 
-        memberId, 
-        content 
+      const {
+        page = 1,
+        limit = 10,
+        category,
+        isPublic,
+        sharedInService,
+        active,
+        memberId,
+        content
       } = req.query;
 
       const where = {};

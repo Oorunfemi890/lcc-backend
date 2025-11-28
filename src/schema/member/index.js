@@ -11,6 +11,7 @@
         memberBlock: require('./member-block.schema'),
         memberLookup: require('./member-lookup.schema'),
         memberGetChildren: require('./member-get-children.schema'),
+        updateProfile: require('./member-update-profile.schema'),
     };
 
 })();

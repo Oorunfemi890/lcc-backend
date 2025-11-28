@@ -7,7 +7,10 @@ const testimonyCreate = {
         isPublic: Joi.boolean().default(true),
         sharedInService: Joi.boolean().default(false),
         active: Joi.boolean().default(true),
-        memberId: Joi.number().integer().required(),
+        memberName: Joi.string().required(),
+        dateOfExperience: Joi.date().required(),
+
+
     })
 };
 

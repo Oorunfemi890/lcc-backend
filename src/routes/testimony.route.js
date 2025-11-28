@@ -4,16 +4,33 @@ import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
 import  validateRequest  from "../middleware/validate-request.middleware";
 import TestimonySchema from "../schema/testimony";
+import MemberAuthMiddleware from "../middleware/member-auth.middleware";
 
 const router = express.Router();
+
+// ============================================
+// MEMBER SELF-SERVICE ROUTES (Member Auth)
+// ============================================
+
+/**
+ * @route   POST /api/v1/testimony/submit
+ * @desc    Submit testimony (Member)
+ * @access  Protected (Member)
+ */
+router.post(
+  "/submit",
+  handleErrorAsync(MemberAuthMiddleware.verifyMemberToken),
+  validateRequest(TestimonySchema.testimonyCreate),
+  handleErrorAsync(TestimonyController.createMemberTestimony)
+);
 
 // ============================================
 // PROTECTED ROUTES (Admin Only)
 // ============================================
 
 /**
- * @route   POST /api/testimony
- * @desc    Create new testimony
+ * @route   POST /api/v1/testimony
+ * @desc    Create new testimony (Admin)
  * @access  Protected (Admin)
  */
 router.post(
@@ -25,7 +42,7 @@ router.post(
 );
 
 /**
- * @route   GET /api/testimony
+ * @route   GET /api/v1/testimony
  * @desc    Get all testimonies with pagination and filters
  * @access  Protected (Admin)
  * @query   page, limit, category, isPublic, sharedInService, active, memberId, content
@@ -39,7 +56,7 @@ router.get(
 );
 
 /**
- * @route   GET /api/testimony/:id
+ * @route   GET /api/v1/testimony/:id
  * @desc    Get single testimony by ID
  * @access  Protected (Admin)
  */
@@ -52,7 +69,7 @@ router.get(
 );
 
 /**
- * @route   PUT /api/testimony/:id
+ * @route   PUT /api/v1/testimony/:id
  * @desc    Update testimony details
  * @access  Protected (Admin)
  */

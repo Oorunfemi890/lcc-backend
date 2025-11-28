@@ -1,15 +1,40 @@
 import express from "express";
 import ServiceController from "../controller/service.controller";
+import YoutubeController from "../controller/youtube.controller";
 import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
-import  validateRequest  from "../middleware/validate-request.middleware";
+import validateRequest from "../middleware/validate-request.middleware";
 import ServiceSchema from "../schema/service";
 
 const router = express.Router();
 
+
+/**
+ * @route   GET /api/v1/youtube/latest
+ * @desc    Get latest videos from YouTube channel
+ * @access  Public
+ * @query   limit
+ */
+router.get(
+  "/online",
+  handleErrorAsync(YoutubeController.getLatestVideos)
+);
+
+
 // ============================================
 // PROTECTED ROUTES (Admin Only)
 // ============================================
+
+/**
+ * @route   GET /api/service/group-by-day
+ * @desc    Get services grouped by day of week
+ * @access  Protected (Admin)
+ * @query   active, serviceType
+ */
+router.get(
+  "/group-by-day",
+  handleErrorAsync(ServiceController.getServicesByDayOfWeek)
+);
 
 /**
  * @route   POST /api/service
@@ -64,5 +89,17 @@ router.put(
   handleErrorAsync(ServiceController.updateService)
 );
 
+/**
+ * @route   DELETE /api/service/:id
+ * @desc    Delete service
+ * @access  Protected (Admin)
+ */
+router.delete(
+  "/:id",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthMiddleware.isAdmin),
+  validateRequest(ServiceSchema.serviceById),
+  handleErrorAsync(ServiceController.deleteService)
+);
 
 export default router;

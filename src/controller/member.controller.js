@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 const { Member, Testimony, FollowUp, AdminUser } = db;
 import MailHelper from "../helpers/email.helper";
 import bcrypt from "bcryptjs";
+import App from "../helpers/index.helper";
 
 class MemberController {
   static async createMember(req, res) {
@@ -93,7 +94,7 @@ class MemberController {
         profilePicture,
         notes,
         memberSince: new Date(),
-        securityPin: hashedPin, // ← store hashed version
+        securityPin: hashedPin,
         countryCode,
       });
 
@@ -119,7 +120,6 @@ class MemberController {
   static async createChildMember(req, res) {
     try {
       const {
-        parentId, // Optional: if not provided, will use parentEmail and parentPhoneNumber
         firstName,
         lastName,
         dateOfBirth,
@@ -131,10 +131,13 @@ class MemberController {
       // Handle profile picture upload
       const profilePicture = req?.fileUrl;
 
-      // Verify that the provided parentId exists
+      // Get parentId from JWT token
+      const parentId = req.user.memberId;
+
+      // Verify that the parent member exists
       const parentMember = await Member.findByPk(parentId);
       if (!parentMember) {
-        return res.status(404).send({ message: "Parent member not found with provided ID" });
+        return res.status(404).send({ message: "Parent member not found" });
       }
 
       // Check if child with same name already exists for this parent
@@ -276,10 +279,20 @@ class MemberController {
         return res.status(404).send({ message: "Member not found" }); // Generic error for security
       }
 
-      // 4. Return member data
+      // 4. Generate JWT token for member
+      const token = App.assignToken({
+        memberId: member.id,
+        phoneNumber: member.phoneNumber,
+        email: member.email,
+        firstName: member.firstName,
+        lastName: member.lastName
+      });
+
+      // 5. Return member data with token
       return res.status(200).send({
         message: "Member verified successfully",
-        data: member
+        data: member,
+        token
       });
 
     } catch (error) {
@@ -369,6 +382,29 @@ class MemberController {
       return res.status(200).send({ message: "Member updated successfully", data: updatedMember });
     } catch (error) {
       console.error("Error updating member:", error);
+      return res.status(500).send({ message: "Internal server error" });
+    }
+  }
+
+  // ✅ Update Member Profile (Member Self-Service)
+  static async updateMemberProfile(req, res) {
+    try {
+      // Get member ID from JWT token
+      const memberId = req.user.memberId;
+
+      // Prevent updating sensitive fields
+      const { securityPin, parentId, ...updateData } = req.body;
+
+      const [updated] = await Member.update(updateData, { where: { id: memberId } });
+
+      if (!updated) {
+        return res.status(404).send({ message: "Member not found" });
+      }
+
+      const updatedMember = await Member.findByPk(memberId);
+      return res.status(200).send({ message: "Profile updated successfully", data: updatedMember });
+    } catch (error) {
+      console.error("Error updating member profile:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }

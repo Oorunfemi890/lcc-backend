@@ -29,7 +29,7 @@ module.exports = function () {
   app.use("/api/v1/program", program);
   app.use("/api/v1/service", service);
   app.use("/api/v1/testimony", testimony);
-  app.use("/api/v1/hero-slider",heroslide);
+  app.use("/api/v1/hero-slider", heroslide);
 
 
 

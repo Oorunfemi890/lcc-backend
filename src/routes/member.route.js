@@ -4,7 +4,8 @@ import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
 import validateRequest from "../middleware/validate-request.middleware";
 import MemberSchema from "../schema/member";
-import ImageUploadMiddleware from '../middleware/image-upload.middleware'
+import ImageUploadMiddleware from '../middleware/image-upload.middleware';
+import MemberAuthMiddleware from '../middleware/member-auth.middleware';
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ const router = express.Router();
 // ============================================
 
 /**
- * @route   POST /api/member/lookup
+ * @route   POST /api/v1/member/lookup
  * @desc    Lookup member by hash (Phone + DOB + PIN)
  * @access  Public
  */
@@ -28,7 +29,7 @@ router.post(
 // ============================================
 
 /**
- * @route   POST /api/member
+ * @route   POST /api/v1/member
  * @desc    Create new member
  * @access  Protected (Admin)
  */
@@ -40,20 +41,7 @@ router.post(
 );
 
 /**
- * @route   POST /api/member/child
- * @desc    Create new child member with parent relationship
- * @access  Protected (Admin)
- */
-router.post(
-  "/add-child",
-  ImageUploadMiddleware,
-  validateRequest(MemberSchema.memberCreateChild),
-  handleErrorAsync(MemberController.createChildMember)
-);
-
-
-/**
- * @route   GET /api/member
+ * @route   GET /api/v1/member
  * @desc    Get all members with pagination and filters
  * @access  Protected (Admin)
  * @query   page, limit, search, active, membershipType
@@ -66,23 +54,24 @@ router.get(
   handleErrorAsync(MemberController.getAllMembers)
 );
 
-
 /**
- * @route   GET /api/member/children
+ * @route   GET /api/v1/member/children
  * @desc    Get children of a member
- * @access  Protected (Admin)
+ * @access  Public
  * @query   parentId
  */
 router.get(
   "/children",
+  handleErrorAsync(MemberAuthMiddleware.verifyMemberToken),
   validateRequest(MemberSchema.memberGetChildren),
   handleErrorAsync(MemberController.getMemberChildren)
 );
 
 /**
- * @route   GET /api/member/:id
+ * @route   GET /api/v1/member/:id
  * @desc    Get single member by ID
  * @access  Protected (Admin)
+ */
 router.get(
   "/:id",
   handleErrorAsync(AuthMiddleware.verifyToken),
@@ -92,8 +81,20 @@ router.get(
 );
 
 /**
- * @route   PUT /api/member/:id
- * @desc    Update member details
+ * @route   PUT /api/v1/member/update-profile
+ * @desc    Update member's own profile
+ * @access  Protected (Member)
+ */
+router.put(
+  "/update-profile",
+  handleErrorAsync(MemberAuthMiddleware.verifyMemberToken),
+  validateRequest(MemberSchema.updateProfile),
+  handleErrorAsync(MemberController.updateMemberProfile)
+);
+
+/**
+ * @route   PUT /api/v1/member/:id
+ * @desc    Update member details (Admin)
  * @access  Protected (Admin)
  */
 router.put(
@@ -104,9 +105,8 @@ router.put(
   handleErrorAsync(MemberController.updateMember)
 );
 
-
 /**
- * @route   PATCH /api/member/:id/block
+ * @route   PATCH /api/v1/member/:id/block
  * @desc    Block member
  * @access  Protected (Admin)
  */
@@ -116,6 +116,23 @@ router.patch(
   handleErrorAsync(AuthMiddleware.isAdmin),
   validateRequest(MemberSchema.memberBlock),
   handleErrorAsync(MemberController.blockMember)
+);
+
+// ============================================
+// MEMBER SELF-SERVICE ROUTES (Member Auth)
+// ============================================
+
+/**
+ * @route   POST /api/v1/member/add-child
+ * @desc    Create new child member with parent relationship
+ * @access  Protected (Member)
+ */
+router.post(
+  "/add-child",
+  handleErrorAsync(MemberAuthMiddleware.verifyMemberToken),
+  ImageUploadMiddleware,
+  validateRequest(MemberSchema.memberCreateChild),
+  handleErrorAsync(MemberController.createChildMember)
 );
 
 
