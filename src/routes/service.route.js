@@ -8,6 +8,18 @@ import ServiceSchema from "../schema/service";
 
 const router = express.Router();
 
+/**
+ * @route   GET /api/v1/youtube/channel
+ * @desc    Get channel info
+ * @access  Public
+ */
+router.get(
+  "/channel",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthMiddleware.isAdmin),
+  handleErrorAsync(YoutubeController.getChachammelnnelInfo)
+);
+
 
 /**
  * @route   GET /api/v1/youtube/latest
@@ -28,9 +40,9 @@ router.get(
 /**
  * @route   GET /api/service/group-by-day
  * @desc    Get services grouped by day of week
- * @access  Protected (Admin)
- * @query   active, serviceType
- */
+  * @access  Protected(Admin)
+    * @query   active, serviceType
+      */
 router.get(
   "/group-by-day",
   handleErrorAsync(ServiceController.getServicesByDayOfWeek)

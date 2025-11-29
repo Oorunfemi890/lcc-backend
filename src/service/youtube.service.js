@@ -1,31 +1,67 @@
 import axios from "axios";
 
 class YoutubeService {
-    constructor() {
-        this.apiKey = process.env.YOUTUBE_API_KEY;
-        this.channelId = process.env.YOUTUBE_CHANNEL_ID;
-        this.baseUrl = "https://www.googleapis.com/youtube/v3";
-    }
 
-    async getLatestVideos(limit = 3) {
+    static async getLatestVideos(limit = 3) {
         try {
-            const response = await axios.get(`${this.baseUrl}/search`, {
+            // Step 1: Get the uploads playlist ID
+            const channelResponse = await axios.get(`${process.env.YOUTUBE_BASE_URL}/channels`, {
                 params: {
-                    key: this.apiKey,
-                    channelId: this.channelId,
-                    part: "snippet,id",
-                    order: "date",
-                    maxResults: limit,
-                    type: "video"
+                    key: process.env.YOUTUBE_API_KEY,
+                    id: process.env.YOUTUBE_CHANNEL_ID,
+                    part: "contentDetails"
                 }
             });
 
-            return response.data.items;
+            if (!channelResponse.data.items || channelResponse.data.items.length === 0) {
+                throw new Error('Channel not found. Check your channelId.');
+            }
+
+            const uploadsPlaylistId = channelResponse.data.items[0].contentDetails.relatedPlaylists.uploads;
+
+            // Step 2: Get videos from uploads playlist
+            const playlistResponse = await axios.get(`${process.env.YOUTUBE_BASE_URL}/playlistItems`, {
+                params: {
+                    key: process.env.YOUTUBE_API_KEY,
+                    playlistId: uploadsPlaylistId,
+                    part: "snippet,contentDetails",
+                    maxResults: limit,
+                    order: "date"
+                }
+            });
+
+
+            return playlistResponse.data.items.map(item => ({
+                videoId: item.contentDetails.videoId,
+                title: item.snippet.title,
+                description: item.snippet.description,
+                publishedAt: item.snippet.publishedAt,
+                thumbnail: item.snippet.thumbnails.medium.url
+            }));
+
         } catch (error) {
-            console.error("Error fetching YouTube videos:", error?.response?.data || error.message);
+            console.error("Error getting last videos:", error.message);
             throw error;
         }
     }
+
+
+    static async getChannelInfo() {
+        try {
+            const response = await axios.get(`${process.env.YOUTUBE_BASE_URL}/channels`, {
+                params: {
+                    key: process.env.YOUTUBE_API_KEY,
+                    part: "snippet,contentDetails,statistics",
+                    id: process.env.YOUTUBE_CHANNEL_ID
+                }
+            });
+            return response.data.items[0];
+        } catch (error) {
+            console.error("Error fetching channel info:", error.message);
+            throw error;
+        }
+    }
+
 }
 
 export default YoutubeService;
