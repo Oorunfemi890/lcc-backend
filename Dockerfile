@@ -1,40 +1,45 @@
-FROM node:12.18.3-alpine3.9
+# Use Node.js 20 LTS (matching your package.json engines)
+FROM node:20.18.3-alpine
 
-RUN apk --update-cache upgrade
+# Install necessary build tools for native dependencies
+RUN apk add --no-cache \
+  python3 \
+  make \
+  g++ \
+  postgresql-client
 
-RUN apk add mysql mysql-client
-
-RUN touch /var/run/mysqld/mysqld.sock
-RUN touch /var/run/mysqld/mysqld.pid
-RUN chown -R mysql:mysql /var/run/mysqld/mysqld.sock
-RUN chown -R mysql:mysql /var/run/mysqld/mysqld.sock
-RUN chmod -R 644 /var/run/mysqld/mysqld.sock
-
-RUN mysqladmin -u root password july@3450
-
-
-ARG NODE_ENV=production
-ENV NODE_ENV $NODE_ENV
-
-ARG PORT=3000
-ENV PORT $PORT
-
-
-
-RUN mkdir -p /usr/src/app && chown node:node /usr/src/app
-
-
-USER node
-
+# Set working directory
 WORKDIR /usr/src/app
 
+# Copy package files
+COPY package*.json ./
+COPY babel.config.json ./
 
-COPY package*.json package*.json
+# Install dependencies
+RUN npm ci --only=production
 
-COPY --chown=node:node package.json package*.json ./
-
+# Copy application source
 COPY . .
 
-EXPOSE $PORT
+# Build the application
+RUN npm run build
 
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+  adduser -S nodejs -u 1001
+
+# Change ownership
+RUN chown -R nodejs:nodejs /usr/src/app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port (Cloud Run will set PORT env variable)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Start the application
 CMD ["npm", "start"]
