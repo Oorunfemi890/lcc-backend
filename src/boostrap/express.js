@@ -37,9 +37,19 @@ module.exports = function () {
 
 
 
+  // Health check endpoints
   app.get("/health-check", (req, res) => {
     res.send("OK");
   });
+
+  app.get("/health", (req, res) => {
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      service: "lcc-backend"
+    });
+  });
+
 
   app.response = Object.create(customExpress);
 

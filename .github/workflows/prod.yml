@@ -1,0 +1,110 @@
+name: Deploy to Production (Cloud Run)
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ secrets.GCP_REGION }}
+  CLOUD_RUN_SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE_NAME }}
+  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ vars.CLOUD_RUN_SERVICE_NAME }}
+  TF_VERSION: 1.6.0
+
+jobs:
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Checkout Infrastructure Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/lcc-infrastructure
+          path: lcc-infrastructure
+          token: ${{ secrets.GH_PAT }} # Requires a PAT to access other repo
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_KEY }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker
+
+      # ========== STEP 1: TERRAFORM PLAN ==========
+      - name: Terraform Plan
+        run: |
+          echo "📋 Step 1/4 - Planning infrastructure changes..."
+          mkdir -p terraform
+          cp -r lcc-infrastructure/lcc-backend/scripts/terraform/* terraform/
+          cd terraform
+          
+          # Initialize (Using local backend for GitHub Actions simplicity, or configure GCS)
+          terraform init
+          
+          cat > terraform.tfvars <<EOF
+          project_id = "${{ secrets.GCP_PROJECT_ID }}"
+          region = "${{ secrets.GCP_REGION }}"
+          service_name = "${{ vars.CLOUD_RUN_SERVICE_NAME }}"
+          image = "${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          min_instances = 0
+          max_instances = 10
+          EOF
+          
+          terraform plan -out=tfplan
+          echo "✅ Infrastructure plan created"
+
+      # ========== STEP 2: TERRAFORM APPLY ==========
+      - name: Terraform Apply
+        run: |
+          echo "🚀 Step 2/4 - Provisioning infrastructure..."
+          cd terraform
+          terraform apply -auto-approve tfplan
+          
+          # Export outputs
+          echo "SERVICE_URL=$(terraform output -raw service_url)" >> $GITHUB_ENV
+          echo "SERVICE_NAME=$(terraform output -raw service_name)" >> $GITHUB_ENV
+          echo "✅ Infrastructure provisioned"
+
+      # ========== STEP 3: BUILD DOCKER IMAGE ==========
+      - name: Build and Push Docker Image
+        run: |
+          echo "🔨 Step 3/4 - Building Docker image..."
+          docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} -t ${{ env.IMAGE_NAME }}:latest .
+          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.IMAGE_NAME }}:latest
+          echo "✅ Docker image built and pushed"
+
+      # ========== STEP 4: DEPLOY TO CLOUD RUN ==========
+      - name: Deploy to Cloud Run
+        run: |
+          echo "🚢 Step 4/4 - Deploying to Cloud Run..."
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --region ${{ secrets.GCP_REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars="NODE_ENV=production" \
+            --set-secrets="DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,CLOUDINARY_CLOUD_NAME=cloudinary-cloud-name:latest,CLOUDINARY_API_KEY=cloudinary-api-key:latest,CLOUDINARY_API_SECRET=cloudinary-api-secret:latest" \
+            --memory 512Mi \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 10 \
+            --timeout 300 \
+            --port 8080
+            
+          echo "✅ Production deployment completed successfully"
+          echo "🌐 Service URL: ${{ env.SERVICE_URL }}"

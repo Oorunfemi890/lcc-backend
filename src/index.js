@@ -3,7 +3,7 @@ import "regenerator-runtime/runtime";
 require("dotenv").config();
 
 const { sequelize, app } = require("./boostrap")();
-const { stream ,logger} = require("./logger/winston");
+const { stream, logger } = require("./logger/winston");
 const morgan = require("morgan");
 const http = require('http');
 
@@ -23,7 +23,7 @@ app.use(morgan("combined", { stream: stream }));
 
 
 const server = http.createServer(app).listen(PORT || 3000, () => {
-  logger.info('Your app is listening on port ' + server.address().port);
+  // logger.info('Your app is listening on port ' + server.address().port);
 });
 
 
