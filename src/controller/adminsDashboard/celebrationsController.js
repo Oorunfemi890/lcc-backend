@@ -1,4 +1,4 @@
-// controllers/celebrationController.js - FIXED: No direct model imports
+// controllers/celebrationController.js 
 const { Op } = require("sequelize");
 const logger = require("../utils/logger");
 const emailService = require("../services/emailService");

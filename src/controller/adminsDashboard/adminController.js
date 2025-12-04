@@ -1,4 +1,4 @@
-// controllers/adminController.js - Admin Management Logic
+// controllers/adminController.js 
 const { validationResult } = require('express-validator');
 const logger = require('../utils/logger');
 

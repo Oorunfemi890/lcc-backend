@@ -1,4 +1,4 @@
-// routes/auth.js - Fixed with better validation
+// routes/auth.js 
 const express = require("express");
 const { body } = require("express-validator");
 const router = express.Router();

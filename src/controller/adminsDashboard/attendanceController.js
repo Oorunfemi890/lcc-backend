@@ -1,4 +1,4 @@
-// controllers/attendanceController.js - PRODUCTION READY FIX
+// controllers/attendanceController.js 
 const { validationResult } = require("express-validator");
 const { Op } = require("sequelize");
 const logger = require("../utils/logger");

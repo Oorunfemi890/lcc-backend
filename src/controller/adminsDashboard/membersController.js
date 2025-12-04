@@ -1,4 +1,4 @@
-// controllers/membersController.js - FIXED: No direct model imports
+// controllers/membersController.js 
 const { Op } = require("sequelize");
 const logger = require("../utils/logger");
 

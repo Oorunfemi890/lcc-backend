@@ -1,4 +1,4 @@
-// controllers/dashboardController.js - FIXED: No direct model imports
+// controllers/dashboardController.js
 const { Op } = require("sequelize");
 const logger = require("../utils/logger");
 

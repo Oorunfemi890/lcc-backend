@@ -1,4 +1,4 @@
-// routes/celebrations.js - Updated with Controller
+// routes/celebrations.js 
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const router = express.Router();

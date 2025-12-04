@@ -1,4 +1,4 @@
-// routes/attendance.js - FIXED VALIDATION RULES
+// routes/attendance.js
 
 const express = require("express");
 const { body, param, query, validationResult } = require("express-validator");

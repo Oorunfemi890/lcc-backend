@@ -1,4 +1,4 @@
-// controllers/eventsController.js - PRODUCTION READY WITH VALIDATION
+// controllers/eventsController.js 
 const { validationResult } = require("express-validator");
 const { Op } = require("sequelize");
 const logger = require("../utils/logger");
