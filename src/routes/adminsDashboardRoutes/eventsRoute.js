@@ -1,9 +1,9 @@
-// routes/events.js - Updated with controller separation
+// routes/events.js
 const express = require("express");
 const { body, param, query, validationResult } = require("express-validator");
 const router = express.Router();
 
-const eventsController = require("../controllers/eventsController");
+const eventsController = require("./controllers/adminsDashboard/eventsController");
 const {
   authenticateToken,
   requirePermission,

@@ -3,7 +3,7 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const router = express.Router();
 
-const adminController = require('../controllers/adminController');
+const adminController = require('./controllers/adminsDashboard/adminController');
 const { requireSuperAdmin, logActivity } = require('../middleware/auth');
 
 // @route   GET /api/admin

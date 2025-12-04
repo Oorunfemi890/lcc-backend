@@ -3,7 +3,7 @@ const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const router = express.Router();
 
-const celebrationController = require('../controllers/celebrationsController');
+const celebrationController = require('./controllers/adminsDashboard/celebrationsController');
 const {
   authenticateToken,
   requirePermission,

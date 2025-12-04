@@ -3,7 +3,7 @@ const express = require("express");
 const { body, param, query, validationResult } = require("express-validator");
 const router = express.Router();
 
-const membersController = require("../controllers/membersController");
+const membersController = require("./controllers/adminsDashboard/membersController");
 const { requirePermission, logActivity } = require("../middleware/auth");
 
 // Validation rules

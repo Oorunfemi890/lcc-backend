@@ -4,7 +4,7 @@ const express = require("express");
 const { body, param, query, validationResult } = require("express-validator");
 const router = express.Router();
 
-const attendanceController = require("../controllers/attendanceController");
+const attendanceController = require("./controllers/adminsDashboard/attendanceController");
 const { requirePermission, logActivity } = require("../middleware/auth");
 
 // ✅ FIXED: Validation rules - timeArrived is now optional
