@@ -2,7 +2,7 @@ import express from "express";
 import CelebrantController from "../controller/celebrant.controller";
 import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
-import  validateRequest  from "../middleware/validate-request.middleware";
+import validateRequest from "../middleware/validate-request.middleware";
 import CelebrantSchema from "../schema/celebrant";
 import ImageUploadMiddleware from '../middleware/image-upload.middleware'
 const router = express.Router();
@@ -21,6 +21,18 @@ router.post(
   ImageUploadMiddleware,
   validateRequest(CelebrantSchema.createCelebrant),
   handleErrorAsync(CelebrantController.createCelebrant)
+);
+
+/**
+ * @route   GET /api/celebrant/stats
+ * @desc    Get celebrant statistics
+ * @access  Protected (Admin)
+ */
+router.get(
+  "/stats",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthMiddleware.isAdmin),
+  handleErrorAsync(CelebrantController.getStats)
 );
 
 /**

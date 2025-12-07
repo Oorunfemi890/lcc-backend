@@ -15,7 +15,11 @@ import followup from '../routes/follow-up.route';
 import program from '../routes/program.route';
 import service from '../routes/service.route';
 import testimony from '../routes/testimony.route';
+
 import heroslide from '../routes/hero-slide.route'
+import dashboardRoute from '../routes/dashboard.route';
+import attendanceRoute from '../routes/attendance.route';
+import adminManagementRoute from '../routes/admin-management.route';
 
 module.exports = function () {
   app.use(bodyParser.json());
@@ -30,6 +34,9 @@ module.exports = function () {
   app.use("/api/v1/service", service);
   app.use("/api/v1/testimony", testimony);
   app.use("/api/v1/hero-slider", heroslide);
+  app.use("/api/v1/dashboard", dashboardRoute);
+  app.use("/api/v1/attendance", attendanceRoute);
+  app.use("/api/v1/admin", adminManagementRoute);
 
 
 
