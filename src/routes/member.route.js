@@ -55,6 +55,18 @@ router.get(
 );
 
 /**
+ * @route   GET /api/v1/member/departments
+ * @desc    Get all departments (membershipType values)
+ * @access  Protected (Admin)
+ */
+router.get(
+  "/departments",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthMiddleware.isAdmin),
+  handleErrorAsync(MemberController.getDepartments)
+);
+
+/**
  * @route   GET /api/v1/member/children
  * @desc    Get children of a member
  * @access  Public

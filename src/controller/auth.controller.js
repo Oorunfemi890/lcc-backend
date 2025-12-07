@@ -2,65 +2,65 @@ import db from "../../models";
 import App from "../helpers/index.helper";
 import MailHelper from "../helpers/email.helper";
 import { Op } from "sequelize";
-import {logger} from '../logger/winston'
+import { logger } from '../logger/winston'
 const { AdminUser, Member } = db;
 
 class AuthController {
 
-static async createAdmin(req, res) {
-  try {
-    const {
-      memberId,
-      role = "ADMIN",
-    } = req.body;
+  static async createAdmin(req, res) {
+    try {
+      const {
+        memberId,
+        role = "ADMIN",
+      } = req.body;
 
-    // check if member exists
-    const member = await Member.findByPk(memberId);
-    if (!member) {
-      return res.status(404).send({ message: "Member not found" });
-    }
+      // check if member exists
+      const member = await Member.findByPk(memberId);
+      if (!member) {
+        return res.status(404).send({ message: "Member not found" });
+      }
 
-    // check if admin already exists
-    const adminExists = await AdminUser.findOne({
-      where: {
-        memberId
-      },
-    });
-    if (adminExists) {
-      return res.status(409).send({ message: "Admin for this member already exists" });
-    }
+      // check if admin already exists
+      const adminExists = await AdminUser.findOne({
+        where: {
+          memberId
+        },
+      });
+      if (adminExists) {
+        return res.status(409).send({ message: "Admin for this member already exists" });
+      }
 
-    const hashPassword = App.hashPassword(password);
+      const hashPassword = App.hashPassword(password);
 
-    const admin = await AdminUser.create(
-      {
-        role,
-        memberId: member.id,
-        active: true,
-      },
-      { raw: true }
-    );
+      const admin = await AdminUser.create(
+        {
+          role,
+          memberId: member.id,
+          active: true,
+        },
+        { raw: true }
+      );
 
-    // send welcome mail with member data
+      // send welcome mail with member data
       MailHelper.sendMail({
-      to: member.email,
-      subject: "Admin Welcome onBoard",
-      template: "welcome",
-      params: member,
-    });
+        to: member.email,
+        subject: "Admin Welcome onBoard",
+        template: "welcome",
+        params: member,
+      });
 
-    const token = App.assignToken({
-      id: admin.id,
-      email: admin.email,
-      role: admin.role,
-    });
+      const token = App.assignToken({
+        id: admin.id,
+        email: admin.email,
+        role: admin.role,
+      });
 
-    res.status(201).send({ message: "Successful", user: { ...admin, token } });
-  } catch (error) {
-    console.log("error: ", error);
-    res.status(500).send({ message: "Internal server error" });
+      res.status(201).send({ message: "Successful", user: { ...admin, token } });
+    } catch (error) {
+      console.log("error: ", error);
+      res.status(500).send({ message: "Internal server error" });
+    }
   }
-}
 
 
   /**
@@ -71,21 +71,84 @@ static async createAdmin(req, res) {
       const { email, password } = req.body;
       const user = await AdminUser.findOne({ where: { email }, raw: true });
       if (!user)
-        return res.status(404).send({ message: "Wrong email/password combination" });
+        return res.status(404).send({ message: "Wrong email/password combination", success: false });
 
       if (!App.isPasswordEqual(password, user.password))
-        return res.status(404).send({ message: "Wrong email/password combination" });
+        return res.status(404).send({ message: "Wrong email/password combination", success: false });
 
-      const token = App.assignToken({
+      const accessToken = App.assignToken({
         id: user.id,
         email: user.email,
         role: user.role,
-      });
+      }, '1d');
 
-      return res.status(200).send({ user: { ...user, token } });
+      const refreshToken = App.assignToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        type: 'refresh'
+      }, '7d');
+
+      return res.status(200).send({
+        user: { ...user, accessToken, refreshToken },
+        success: true,
+        message: "Successful"
+      });
     } catch (error) {
       logger.error(error)
-      res.status(500).send({ message: error.message });
+      res.status(500).send({ message: error.message, success: false });
+    }
+  }
+
+  /**
+   * Refresh Token
+   */
+  static async refreshToken(req, res) {
+    try {
+      // Get refresh token from body or authorization header
+      const refreshToken = req.body.refreshToken ||
+        (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+
+      if (!refreshToken) {
+        return res.status(400).send({ message: "Refresh Token is required", success: false });
+      }
+
+      const decoded = await App.decodeToken(refreshToken);
+
+      // Verify it is a refresh token
+      if (decoded.type !== 'refresh') {
+        return res.status(403).send({ message: "Invalid token type", success: false });
+      }
+
+      const user = await AdminUser.findByPk(decoded.id);
+
+      if (!user) return res.status(404).send({ message: "User not found", success: false });
+
+      const newAccessToken = App.assignToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      }, '1d');
+
+      const newRefreshToken = App.assignToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        type: 'refresh'
+      }, '7d');
+
+      // Return consistent structure
+      return res.status(200).send({
+        user: { ...user.toJSON(), accessToken: newAccessToken, refreshToken: newRefreshToken },
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        success: true,
+        message: "Token refreshed successfully"
+      });
+
+    } catch (error) {
+      logger.error(error);
+      return res.status(403).send({ message: "Invalid or expired refresh token", success: false });
     }
   }
 

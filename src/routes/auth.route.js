@@ -2,7 +2,7 @@ import express from "express";
 import AuthController from "../controller/auth.controller";
 import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
-import  validateRequest  from "../middleware/validate-request.middleware";
+import validateRequest from "../middleware/validate-request.middleware";
 import AuthSchema from "../schema/auth";
 
 const router = express.Router();
@@ -20,6 +20,16 @@ router.post(
   "/admin/login",
   validateRequest(AuthSchema.adminLogin),
   handleErrorAsync(AuthController.adminLogin)
+);
+
+/**
+ * @route   POST /api/auth/admin/refresh
+ * @desc    Refresh admin token
+ * @access  Public
+ */
+router.post(
+  "/admin/refresh",
+  handleErrorAsync(AuthController.refreshToken)
 );
 
 /**
@@ -45,8 +55,31 @@ router.post(
 // );
 
 // ============================================
+// PUBLIC ROUTES (No Authentication Required)
+// ============================================
+
+// ... (other public routes) ...
+
+// ============================================
 // PROTECTED ROUTES (Authentication Required)
 // ============================================
+
+/**
+ * @route   GET /api/auth/verify
+ * @desc    Verify token and return user
+ * @access  Protected
+ */
+router.get(
+  "/verify",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  (req, res) => {
+    return res.status(200).json({
+      success: true,
+      data: req.user, // verifyToken middleware attaches user to req
+      message: "Token is valid",
+    });
+  }
+);
 
 /**
  * @route   POST /api/auth/admin/reset-password

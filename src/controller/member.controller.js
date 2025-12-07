@@ -345,6 +345,40 @@ class MemberController {
     }
   }
 
+  // ✅ Get Departments (membershipType values)
+  static async getDepartments(req, res) {
+    try {
+      // Return the membershipType enum values from the model
+      const departments = [
+        'Youth',
+        "Children's",
+        'Choir',
+        'Media & Audio Visual',
+        'Ushering',
+        'Prayer',
+        'Outreach & Evangelism',
+        'Hospitality',
+        'Counseling',
+        "Men's Fellowship",
+        "Women's Fellowship",
+        'Sunday School',
+        'Other'
+      ];
+
+      return res.status(200).send({
+        success: true,
+        message: "Departments fetched successfully",
+        data: departments
+      });
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      return res.status(500).send({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  }
+
   // ✅ Get Single Member
   static async getOneMember(req, res) {
     try {

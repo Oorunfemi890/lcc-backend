@@ -32,7 +32,7 @@ class CelebrantController {
         celebrationDate,
         contact,
         message,
-        specialRequests:message,
+        specialRequests: message,
         photoUrl,
       });
 
@@ -92,6 +92,69 @@ class CelebrantController {
     } catch (error) {
       console.log("Error deleting celebrant: ", error);
       return res.status(500).send({ message: "Internal server error" });
+    }
+  }
+
+  /**
+   * Get Celebrant Statistics
+   */
+  static async getStats(req, res) {
+    try {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Normalize to start of day
+
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
+
+      // Total celebrants
+      const totalCelebrants = await Celebrant.count();
+
+      // Upcoming celebrants (celebration date is in the future)
+      const upcomingCelebrants = await Celebrant.count({
+        where: {
+          celebrationDate: {
+            [Op.gte]: now
+          }
+        }
+      });
+
+      // This month's celebrants
+      const thisMonthCelebrants = await Celebrant.count({
+        where: {
+          celebrationDate: {
+            [Op.gte]: now,
+            [Op.lte]: endOfMonth
+          }
+        }
+      });
+
+      // Count by type
+      const birthdayCount = await Celebrant.count({
+        where: { celebrationType: 'birthday' }
+      });
+
+      const anniversaryCount = await Celebrant.count({
+        where: { celebrationType: 'anniversary' }
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          totalCelebrants,
+          upcomingCelebrants,
+          thisMonthCelebrants,
+          birthdayCount,
+          anniversaryCount
+        },
+        message: "Celebrant statistics retrieved successfully"
+      });
+    } catch (error) {
+      console.error("Error fetching celebrant stats:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch celebrant statistics",
+        error: error.message
+      });
     }
   }
 

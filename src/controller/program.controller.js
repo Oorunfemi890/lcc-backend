@@ -7,7 +7,7 @@ class ProgramController {
   // Create Program
   static async createProgram(req, res) {
     try {
-      const program = await Program.create({imageUrl: req.fileUrl, ...req.body});
+      const program = await Program.create({ imageUrl: req.fileUrl, ...req.body });
       return res.status(201).json(program);
     } catch (error) {
       return res.status(400).json({ error: error.message });
@@ -41,6 +41,83 @@ class ProgramController {
       });
     } catch (error) {
       return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // Get Program Statistics
+  static async getStats(req, res) {
+    try {
+      const { Op } = require("sequelize");
+
+      // Get current date at start of day (midnight) for proper date comparison
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+      // Total events
+      const totalEvents = await Program.count();
+
+      // Upcoming events (startDate >= today)
+      const upcomingEvents = await Program.count({
+        where: {
+          startDate: {
+            [Op.gte]: now
+          }
+        }
+      });
+
+      // Completed events (endDate < today OR startDate < today if no endDate)
+      const completedEvents = await Program.count({
+        where: {
+          [Op.or]: [
+            {
+              endDate: {
+                [Op.lt]: now
+              }
+            },
+            {
+              [Op.and]: [
+                { endDate: null },
+                {
+                  startDate: {
+                    [Op.lt]: now
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      });
+
+      // Events created this month
+      const thisMonthEvents = await Program.count({
+        where: {
+          createdAt: {
+            [Op.gte]: startOfMonth,
+            [Op.lte]: endOfMonth
+          }
+        }
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          totalEvents,
+          upcomingEvents,
+          completedEvents,
+          thisMonthEvents
+        },
+        message: "Program stats retrieved successfully"
+      });
+    } catch (error) {
+      console.error("Program stats error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch program stats",
+        error: error.message
+      });
     }
   }
 

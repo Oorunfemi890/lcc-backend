@@ -31,7 +31,7 @@ class FollowUpController {
 
       const fullFollowUp = await FollowUp.findByPk(followUp.id, {
         include: [
-          { model: FirstTimer, as: "firstTimer", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
+          { model: FirstTimer, as: "firstTimer", attributes: ["id", "surname", "otherNames", "phoneNumber"] },
           { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
         ],
       });
@@ -46,66 +46,66 @@ class FollowUpController {
     }
   }
 
-// ✅ Get all follow-ups (paginated + filter by queries)
-static async getAllFollowUps(req, res) {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      followUpType,
-      assignedToMemberId,
-      firstTimerId,
-      startDate,
-      endDate,
-    } = req.query;
+  // ✅ Get all follow-ups (paginated + filter by queries)
+  static async getAllFollowUps(req, res) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        status,
+        followUpType,
+        assignedToMemberId,
+        firstTimerId,
+        startDate,
+        endDate,
+      } = req.query;
 
-    const where = {};
+      const where = {};
 
-    if (status) where.status = status;
-    if (followUpType) where.followUpType = followUpType;
-    if (assignedToMemberId) where.assignedToMemberId = assignedToMemberId;
-    if (firstTimerId) where.firstTimerId = firstTimerId;
+      if (status) where.status = status;
+      if (followUpType) where.followUpType = followUpType;
+      if (assignedToMemberId) where.assignedToMemberId = assignedToMemberId;
+      if (firstTimerId) where.firstTimerId = firstTimerId;
 
-    // Date range filter (scheduledDate)
-    if (startDate && endDate) {
-      where.scheduledDate = {
-        [db.Sequelize.Op.between]: [startDate, endDate],
-      };
-    } else if (startDate) {
-      where.scheduledDate = { [db.Sequelize.Op.gte]: startDate };
-    } else if (endDate) {
-      where.scheduledDate = { [db.Sequelize.Op.lte]: endDate };
-    }
+      // Date range filter (scheduledDate)
+      if (startDate && endDate) {
+        where.scheduledDate = {
+          [db.Sequelize.Op.between]: [startDate, endDate],
+        };
+      } else if (startDate) {
+        where.scheduledDate = { [db.Sequelize.Op.gte]: startDate };
+      } else if (endDate) {
+        where.scheduledDate = { [db.Sequelize.Op.lte]: endDate };
+      }
 
-    const offset = (page - 1) * limit;
+      const offset = (page - 1) * limit;
 
-    const { count, rows } = await FollowUp.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset,
-      order: [["scheduledDate", "DESC"]],
-      include: [
-        { model: FirstTimer, as: "firstTimer", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
-        { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
-      ],
-    });
-
-    return res.status(200).send({
-      message: "Follow-ups retrieved successfully",
-      pagination: {
-        total: count,
-        page: parseInt(page),
+      const { count, rows } = await FollowUp.findAndCountAll({
+        where,
         limit: parseInt(limit),
-        pages: Math.ceil(count / limit),
-      },
-      data: rows,
-    });
-  } catch (error) {
-    console.error("Error fetching follow-ups:", error);
-    return res.status(500).send({ message: "Internal server error" });
+        offset,
+        order: [["scheduledDate", "DESC"]],
+        include: [
+          { model: FirstTimer, as: "firstTimer", attributes: ["id", "surname", "otherNames", "phoneNumber"] },
+          { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
+        ],
+      });
+
+      return res.status(200).send({
+        message: "Follow-ups retrieved successfully",
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(count / limit),
+        },
+        data: rows,
+      });
+    } catch (error) {
+      console.error("Error fetching follow-ups:", error);
+      return res.status(500).send({ message: "Internal server error" });
+    }
   }
-}
 
 
   static async getFollowUpById(req, res) {
@@ -113,7 +113,7 @@ static async getAllFollowUps(req, res) {
       const { id } = req.params;
       const followUp = await FollowUp.findByPk(id, {
         include: [
-          { model: FirstTimer, as: "firstTimer", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
+          { model: FirstTimer, as: "firstTimer", attributes: ["id", "surname", "otherNames", "phoneNumber"] },
           { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
         ],
       });
@@ -144,7 +144,7 @@ static async getAllFollowUps(req, res) {
 
       const updatedFollowUp = await FollowUp.findByPk(id, {
         include: [
-          { model: FirstTimer, as: "firstTimer", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
+          { model: FirstTimer, as: "firstTimer", attributes: ["id", "surname", "otherNames", "phoneNumber"] },
           { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
         ],
       });
