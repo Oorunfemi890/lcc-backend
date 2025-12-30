@@ -1,6 +1,7 @@
 const path = require("path");
 const ejs = require("ejs-promise");
 const nodemailer = require("nodemailer");
+const { logger } = require("../logger/winston");
 
 class MailService {
   filename;
@@ -17,6 +18,7 @@ class MailService {
     this.to = to;
     this.subject = subject;
 
+    // SMTP configuration
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
@@ -50,7 +52,7 @@ class MailService {
               return resolve(data);
             })
             .catch((error) => {
-              console.log("callehere is error: ", error);
+              console.log("Error rendering template: ", error);
               reject(error);
             });
         });
@@ -60,30 +62,45 @@ class MailService {
     });
   }
 
+  /**
+   * Send email via SMTP
+   * @param {string} html - HTML content
+   */
+  async sendViaSMTP(html) {
+    return new Promise((resolve, reject) => {
+      const mailOptions = {
+        from: this.from,
+        to: this.to,
+        subject: this.subject,
+        html,
+      };
+
+      this.transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          logger.error("Email send error: ", error.message);
+          return reject({ message: "failed", error: error.message });
+        }
+        logger.info("Email sent: ", info.response);
+        resolve({ message: "success", info: info.response });
+      });
+    });
+  }
+
+  /**
+   * Send email with template
+   */
   send() {
     return new Promise(async (resolve, reject) => {
       try {
         const html = await this.generateHtml();
-        const mailOptions = {
-          from: this.from,
-          to: this.to,
-          subject: this.subject,
-          html,
-        };
-
-        this.transporter.sendMail(mailOptions, function (error, info) {
-          if (error) {
-            console.log("Email send error: ", error);
-            return reject({ message: "failed", error });
-          }
-          console.log("Email sent: ", info.response);
-          resolve({ message: "success", info });
-        });
+        const result = await this.sendViaSMTP(html);
+        resolve(result);
       } catch (error) {
         reject(error);
       }
     });
   }
+
 }
 
 export default MailService;

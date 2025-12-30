@@ -41,6 +41,17 @@ The API exposes the following main modules:
 - **Celebrants**: Managing birthday/anniversary celebrants.
 - **Follow Up**: Follow-up tracking for members/visitors.
 - **Hero Slides**: Management of homepage banner slides.
+- **Messaging**: SMS, Email, and WhatsApp notifications via Termii API.
+
+## 📱 Messaging Integration
+
+The backend supports multi-channel messaging through the **Termii API** (recommended for Nigeria) and other providers:
+
+- **SMS**: Send text messages via Termii or Twilio
+- **Email**: Send emails via SMTP or Termii
+- **WhatsApp**: Send WhatsApp messages via Termii, Meta, or Twilio
+
+For detailed setup and usage instructions, see [TERMII_INTEGRATION.md](./TERMII_INTEGRATION.md).
 
 ## 🛠️ Local Development Setup
 
@@ -75,11 +86,39 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# External Services (Optional for local dev)
+# Email Configuration (SMTP Only)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_gmail_app_password
+
+# Termii API (SMS & WhatsApp for Nigeria)
+TERMII_API_KEY=your_termii_api_key
+TERMII_SENDER_ID=LCC
+
+# SMS Configuration (uses Termii)
+SMS_API_KEY=your_termii_api_key
+SMS_SENDER_ID=LCC
+
+# WhatsApp Configuration (uses Termii)
+WHATSAPP_API_KEY=your_termii_api_key
+
+# Admin Portal
+ADMIN_PORTAL_URL=https://admin.libertychristiancentre.com
+
+# External Services (Optional)
 YOUTUBE_API_KEY=your_youtube_key
-TWILIO_ACCOUNT_SID=your_twilio_sid
-TWILIO_AUTH_TOKEN=your_twilio_token
 ```
+
+> **Configuration**:
+> - **Email**: SMTP only (Gmail, SendGrid, Mailgun, etc.)
+> - **SMS**: Termii only - Best for Nigeria
+> - **WhatsApp**: Termii only - Best for Nigeria
+>
+> For detailed setup instructions, see:
+> - [Quick Setup Guide](./QUICK_SETUP.md) - Fast setup in 5 minutes
+> - [Complete Configuration Guide](./MESSAGING_CONFIG.md) - Full documentation
+> - [Environment Variables](./.env.example) - All available options
 
 ### 3. Run Locally
 ```bash

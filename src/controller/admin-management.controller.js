@@ -2,6 +2,8 @@ import db from "../../models";
 import bcrypt from "bcryptjs";
 import { Op } from "sequelize";
 import crypto from "crypto";
+import MailHelper from "../helpers/email.helper.js";
+import WhatsappService from "../service/whatsapp.service.js";
 
 const { AdminUser, Member } = db;
 
@@ -78,7 +80,7 @@ class AdminManagementController {
      */
     static async createAdmin(req, res) {
         try {
-            const { email, memberId, role, password } = req.body;
+            const { memberId, role } = req.body;
             const currentUser = req.user;
 
             // Validate role permissions
@@ -91,21 +93,30 @@ class AdminManagementController {
                 }
             }
 
-            // Check if admin already exists
-            const existingAdmin = await AdminUser.findOne({ where: { email } });
-            if (existingAdmin) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Admin user with this email already exists"
-                });
-            }
-
             // Check if member exists
             const member = await Member.findByPk(memberId);
             if (!member) {
                 return res.status(404).json({
                     success: false,
                     message: "Member not found"
+                });
+            }
+
+            // Use member's email
+            const email = member.email;
+            if (!email) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Member does not have an email address"
+                });
+            }
+
+            // Check if admin already exists with this email
+            const existingAdmin = await AdminUser.findOne({ where: { email } });
+            if (existingAdmin) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Admin user with this email already exists"
                 });
             }
 
@@ -118,8 +129,11 @@ class AdminManagementController {
                 });
             }
 
+            // Generate random secure password (12 characters)
+            const generatedPassword = crypto.randomBytes(12).toString('base64').slice(0, 12);
+
             // Hash password
-            const hashedPassword = await bcrypt.hash(password, 10);
+            const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
             // Create admin user
             const newAdmin = await AdminUser.create({
@@ -129,6 +143,36 @@ class AdminManagementController {
                 password: hashedPassword,
                 active: true
             });
+
+            // Send credentials via email and WhatsApp
+            try {
+                // Send email
+                const emailSent = await MailHelper.sendMail({
+                    to: email,
+                    subject: 'Admin Account Created - Liberty Christian Centre',
+                    template: 'admin-credentials',
+                    params: {
+                        name: `${member.firstName} ${member.lastName}`,
+                        email: email,
+                        password: generatedPassword,
+                        role: role,
+                        loginUrl: process.env.ADMIN_PORTAL_URL || 'https://admin.libertychristiancentre.com'
+                    }
+                });
+
+                // Send WhatsApp message if member has phone number
+                if (member.phoneNumber) {
+                    const whatsappService = new WhatsappService();
+                    const whatsappMessage = `*Admin Account Created*\n\nHello ${member.firstName},\n\nYour admin account has been created for Liberty Christian Centre.\n\n*Email:* ${email}\n*Password:* ${generatedPassword}\n*Role:* ${role}\n\nPlease login and change your password immediately.\n\n*Login:* ${process.env.ADMIN_PORTAL_URL || 'https://admin.libertychristiancentre.com'}\n\n_- Liberty Christian Centre_`;
+
+                    await whatsappService.send(member.phoneNumber, whatsappMessage);
+                }
+
+                console.log(`Admin credentials sent to ${email} via email and WhatsApp`);
+            } catch (notificationError) {
+                console.error('Failed to send credentials notification:', notificationError);
+                // Don't fail the request if notification fails
+            }
 
             // Fetch with member details
             const adminWithMember = await AdminUser.findByPk(newAdmin.id, {
@@ -145,7 +189,7 @@ class AdminManagementController {
             return res.status(201).json({
                 success: true,
                 data: adminWithMember,
-                message: "Admin user created successfully"
+                message: "Admin user created successfully. Credentials sent via email and WhatsApp."
             });
         } catch (error) {
             console.error("Create admin error:", error);

@@ -72,13 +72,18 @@ router.post(
 router.get(
   "/verify",
   handleErrorAsync(AuthMiddleware.verifyToken),
-  (req, res) => {
-    return res.status(200).json({
-      success: true,
-      data: req.user, // verifyToken middleware attaches user to req
-      message: "Token is valid",
-    });
-  }
+  handleErrorAsync(AuthController.getProfile)
+);
+
+/**
+ * @route   GET /api/auth/me
+ * @desc    Get current admin profile
+ * @access  Protected
+ */
+router.get(
+  "/me",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthController.getProfile)
 );
 
 /**

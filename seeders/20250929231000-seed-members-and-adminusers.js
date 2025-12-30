@@ -14,19 +14,46 @@ module.exports = {
     let memberId;
 
     if (!member) {
+      const securityPin = "1990";
+      const phoneNumber = "08132362341";
+      const dateOfBirth = "1990-03-12";
+      const dobString = dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : '';
+      const stringToHash = `${securityPin}${phoneNumber}${dobString}`;
+      const hashedPin = await bcrypt.hash(stringToHash, 10);
+
       memberId = Sequelize.Utils.toDefaultValue(Sequelize.UUIDV4());
       await queryInterface.bulkInsert("Members", [
         {
           id: memberId,
+          securityPin: hashedPin,
           firstName: "Ibkun",
           lastName: "Odeyemi",
           email: "odeyemiibukuna@gmail.com",
-          phoneNumber: "08132362341",
+          phoneNumber: phoneNumber,
           countryCode: "+234",
           address: "No 73 Modupe Young Thomas Estate, Ajah, Lagos",
           memberSince: new Date(),
           active: true,
-          membershipType: "minister",
+          maritalStatus: "married",
+          occupation: "Software Engineer",
+          resetOtp: "",
+          resetOtpExpiry: null,
+          isWorker: true,
+          ageGroup: "adult",
+          membershipType: "Media & Audio Visual",
+          maritalStatus: "married",
+          occupation: "Software Engineer",
+          resetOtp: "",
+          resetOtpExpiry: null,
+          isWorker: true,
+          emergencyContactName: "Okiki Odeyemi",
+          emergencyContactPhone: "08132362341",
+          emergencyContactRelationship: "Spouse",
+          gender: "male",
+          ageGroup: "adult",
+          dateOfBirth,
+          profilePicture: "https://res.cloudinary.com/dwlsoqntp/image/upload/v1764360289/mjxrdghxxyrcc9oogxa0.jpg",
+          notes: "This is a test member",
           createdAt: new Date(),
           updatedAt: new Date(),
         },

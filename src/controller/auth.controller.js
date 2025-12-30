@@ -69,34 +69,92 @@ class AuthController {
   static async adminLogin(req, res) {
     try {
       const { email, password } = req.body;
-      const user = await AdminUser.findOne({ where: { email }, raw: true });
+      const user = await AdminUser.findOne({
+        where: { email },
+        include: [{
+          model: Member,
+          as: "member",
+          attributes: ["id", "firstName", "lastName", "phoneNumber", "profilePicture", "occupation"]
+        }]
+      });
+
       if (!user)
         return res.status(404).send({ message: "Wrong email/password combination", success: false });
 
       if (!App.isPasswordEqual(password, user.password))
         return res.status(404).send({ message: "Wrong email/password combination", success: false });
 
+      const userData = user.toJSON();
+      delete userData.password;
+
       const accessToken = App.assignToken({
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        id: userData.id,
+        email: userData.email,
+        role: userData.role,
       }, '1d');
 
       const refreshToken = App.assignToken({
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        id: userData.id,
+        email: userData.email,
+        role: userData.role,
         type: 'refresh'
       }, '7d');
 
+      const responseUser = {
+        ...userData,
+        name: userData.member ? `${userData.member.firstName} ${userData.member.lastName}` : "Admin",
+        phone: userData.member?.phoneNumber || "",
+        position: userData.member?.occupation || "",
+        isActive: userData.active,
+        accessToken,
+        refreshToken
+      };
+
       return res.status(200).send({
-        user: { ...user, accessToken, refreshToken },
+        user: responseUser,
         success: true,
         message: "Successful"
       });
     } catch (error) {
       logger.error(error)
       res.status(500).send({ message: error.message, success: false });
+    }
+  }
+
+  /**
+   * Get Admin Profile
+   */
+  static async getProfile(req, res) {
+    try {
+      const user = await AdminUser.findByPk(req.user.id, {
+        include: [{
+          model: Member,
+          as: "member",
+          attributes: ["id", "firstName", "lastName", "phoneNumber", "profilePicture", "occupation"]
+        }]
+      });
+
+      if (!user) return res.status(404).send({ message: "User not found", success: false });
+
+      const userData = user.toJSON();
+      delete userData.password;
+      const responseUser = {
+        ...userData,
+        name: userData.member ? `${userData.member.firstName} ${userData.member.lastName}` : "Admin",
+        phone: userData.member?.phoneNumber || "",
+        position: userData.member?.occupation || "",
+        isActive: userData.active
+      };
+
+      return res.status(200).send({
+        success: true,
+        data: responseUser,
+        user: responseUser, // Support both formats
+        message: "Profile retrieved successfully"
+      });
+    } catch (error) {
+      logger.error(error);
+      return res.status(500).send({ message: "Internal server error", success: false });
     }
   }
 
@@ -137,9 +195,12 @@ class AuthController {
         type: 'refresh'
       }, '7d');
 
+      const userData = user.toJSON();
+      delete userData.password;
+
       // Return consistent structure
       return res.status(200).send({
-        user: { ...user.toJSON(), accessToken: newAccessToken, refreshToken: newRefreshToken },
+        user: { ...userData, accessToken: newAccessToken, refreshToken: newRefreshToken },
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
         success: true,

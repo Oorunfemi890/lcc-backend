@@ -17,12 +17,39 @@ class ProgramController {
   // Get All Programs (with queries + pagination)
   static async findAllProgram(req, res) {
     try {
-      const { page = 1, limit = 10, category, frequency, name } = req.query;
+      const { page = 1, limit = 10, category, frequency, name, status } = req.query;
+      const { Op } = require("sequelize");
 
       const where = {};
       if (category) where.category = category;
       if (frequency) where.frequency = frequency;
-      if (name) where.name = { [require("sequelize").Op.iLike]: `%${name}%` };
+      if (name) where.name = { [Op.iLike]: `%${name}%` };
+
+      // Filter by status using date comparisons
+      if (status) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        if (status === 'upcoming') {
+          // Events that haven't started yet
+          where.startDate = { [Op.gt]: today };
+        } else if (status === 'ongoing') {
+          // Events that have started but not ended
+          where[Op.and] = [
+            { startDate: { [Op.lte]: today } },
+            {
+              [Op.or]: [
+                { endDate: { [Op.gte]: today } },
+                { endDate: null }
+              ]
+            }
+          ];
+        } else if (status === 'completed') {
+          // Events that have ended
+          where.endDate = { [Op.lt]: today };
+        }
+        // Note: 'cancelled' status would require a separate cancelled field in the database
+      }
 
       const offset = (page - 1) * limit;
 

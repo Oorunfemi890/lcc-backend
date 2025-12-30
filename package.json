@@ -13,7 +13,7 @@
     "make-migration": "npx sequelize-cli migration:generate --name",
     "model-generate": "npx sequelize-cli model:generate --name",
     "db-create": "npx sequelize-cli db:create",
-    "drop_db": "npx sequelize-cli db:create",
+    "drop_db": "npx sequelize-cli db:drop",
     "revert-migration": "npx sequelize-cli db:migrate:undo",
     "revert-all-migration": "npx sequelize-cli db:migrate:undo:all"
   },
