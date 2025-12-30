@@ -7,6 +7,7 @@ const memberGetAll = {
         search: Joi.string().allow(null, ""),
         active: Joi.boolean().truthy("true").falsy("false"),
         membershipType: Joi.string().valid("member", "admin", "pastor", "minister"),
+        isWorker: Joi.boolean().truthy("true").falsy("false"),
     })
 };
 

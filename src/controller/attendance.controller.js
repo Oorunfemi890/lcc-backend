@@ -90,10 +90,12 @@ class AttendanceController {
             return res.status(200).send({
                 message: "Attendance records fetched successfully",
                 pagination: {
-                    total: count,
-                    page,
-                    pages: Math.ceil(count / limit),
+                    totalRecords: count,
+                    currentPage: page,
+                    totalPages: Math.ceil(count / limit),
                     limit,
+                    hasNextPage: page < Math.ceil(count / limit),
+                    hasPrevPage: page > 1
                 },
                 data: rows,
             });
@@ -226,6 +228,19 @@ class AttendanceController {
                 }
             }) || 0;
 
+            // Get highest and lowest attendance
+            const highestRecord = await Attendance.findOne({
+                order: [['total', 'DESC']],
+                attributes: ['total']
+            });
+            const lowestRecord = await Attendance.findOne({
+                order: [['total', 'ASC']],
+                attributes: ['total'],
+                where: {
+                    total: { [Op.gt]: 0 } // Exclude zero attendance
+                }
+            });
+
             return res.status(200).send({
                 message: "Attendance statistics retrieved successfully",
                 data: {
@@ -237,7 +252,9 @@ class AttendanceController {
                     totalVisitors,
                     thisMonthRecords,
                     thisMonthAttendance,
-                    averageAttendance: totalRecords > 0 ? Math.round(totalAttendance / totalRecords) : 0
+                    averageAttendance: totalRecords > 0 ? Math.round(totalAttendance / totalRecords) : 0,
+                    highestAttendance: highestRecord?.total || 0,
+                    lowestAttendance: lowestRecord?.total || 0
                 }
             });
         } catch (error) {

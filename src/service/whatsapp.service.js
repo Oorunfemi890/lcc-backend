@@ -1,34 +1,134 @@
-import twilio from "twilio";
+import axios from "axios";
+import { logger } from "../logger/winston";
 
 class WhatsappService {
     constructor() {
-        this.client = twilio(
-            process.env.TWILIO_ACCOUNT_SID,
-            process.env.TWILIO_AUTH_TOKEN
-        );
+        // Termii configuration
+        this.whatsappApiKey = process.env.TERMII_API_KEY
+        this.whatsappSenderId = process.env.TERMII_SENDER_ID
+        this.smsApiUrl = process.env.TERMII_MESSAGE_API_URL
     }
 
-    send(to, body) {
-        return new Promise((resolve, reject) => {
-            // Ensure 'to' number is in the correct format for WhatsApp (e.g., +1234567890)
-            // Twilio expects 'whatsapp:+1234567890'
-            const formattedTo = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
-            const formattedFrom = process.env.TWILIO_WHATSAPP_NUMBER.startsWith("whatsapp:")
-                ? process.env.TWILIO_WHATSAPP_NUMBER
-                : `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`;
+    /**
+     * Send WhatsApp message to a single recipient
+     * @param {string} to - Recipient phone number (e.g., +2348012345678 or 08012345678)
+     * @param {string} message - WhatsApp message
+     */
+    async send(to, message) {
+        try {
+            if (!this.whatsappApiKey) {
+                logger.warn('Termii API key not configured. Skipping WhatsApp send.');
+                return;
+            }
 
-            this.client.messages
-                .create({
-                    body: body,
-                    from: formattedFrom,
-                    to: formattedTo,
+            // Normalize phone number
+            const phoneNumber = this.normalizePhoneNumber(to);
+
+            await this.sendViaTermii(phoneNumber, message);
+
+            logger.info(`WhatsApp message sent to ${phoneNumber.substring(0, 8)}...`);
+        } catch (error) {
+            logger.error(`Failed to send WhatsApp message: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Send WhatsApp message via Termii
+     * @param {string} to - Recipient phone number
+     * @param {string} message - Message text
+     */
+    async sendViaTermii(to, message) {
+        try {
+
+            const payload = {
+                api_key: this.whatsappApiKey,
+                to,
+                type: 'plain',
+                channel: 'whatsapp',
+                from: this.whatsappSenderId,
+                sms: message,
+            };
+
+            const response = await axios.post(this.smsApiUrl, payload, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                timeout: 10000,
+                validateStatus: function (status) {
+                    return status >= 200 && status < 600;
+                }
+            });
+
+            logger.info(`Termii API Response: ${JSON.stringify(response.data)}`);
+
+            if (response.data.code !== 'ok') {
+                const errorMessage = response.data.message || response.data.error || JSON.stringify(response.data);
+                throw new Error(`Termii API error: ${errorMessage}`);
+            }
+
+        } catch (error) {
+            logger.error(`Termii WhatsApp error: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Normalize phone number to international format
+     * @param {string} phoneNumber - Phone number
+     * @returns {string} Normalized phone number
+     */
+    normalizePhoneNumber(phoneNumber) {
+        // Remove all non-digit characters
+        let normalized = phoneNumber.replace(/\D/g, '');
+
+        // If starts with 0, replace with country code (234 for Nigeria)
+        if (normalized.startsWith('0')) {
+            const countryCode = process.env.WHATSAPP_COUNTRY_CODE || '234';
+            normalized = countryCode + normalized.substring(1);
+        }
+
+        // Remove + prefix if present for API calls
+        normalized = normalized.replace('+', '');
+
+        return normalized;
+    }
+
+    /**
+     * Send notification via WhatsApp
+     * @param {string} to - Recipient phone number
+     * @param {string} title - Notification title
+     * @param {string} body - Notification body
+     */
+    async sendNotificationMessage(to, title, body) {
+        const message = `*${title}*\n\n${body}\n\n_- Liberty Christian Centre_`;
+        await this.send(to, message);
+    }
+
+    /**
+     * Send bulk WhatsApp messages
+     * @param {string[]} recipients - Array of phone numbers
+     * @param {string} message - Message text
+     */
+    async sendBulkMessages(recipients, message) {
+        try {
+            if (!this.whatsappApiKey) {
+                logger.warn('Termii API key not configured. Skipping bulk send.');
+                return;
+            }
+
+            const promises = recipients.map((recipient) =>
+                this.send(recipient, message).catch((error) => {
+                    logger.error(`Failed to send WhatsApp to ${recipient}: ${error.message}`);
                 })
-                .then((message) => resolve(message))
-                .catch((error) => {
-                    console.error("WhatsApp send failed:", error);
-                    reject(error);
-                });
-        });
+            );
+
+            await Promise.allSettled(promises);
+            logger.info(`Bulk WhatsApp sent to ${recipients.length} recipients`);
+        } catch (error) {
+            logger.error(`Failed to send bulk WhatsApp: ${error.message}`);
+            throw error;
+        }
     }
 }
 

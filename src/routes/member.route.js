@@ -6,8 +6,33 @@ import validateRequest from "../middleware/validate-request.middleware";
 import MemberSchema from "../schema/member";
 import ImageUploadMiddleware from '../middleware/image-upload.middleware';
 import MemberAuthMiddleware from '../middleware/member-auth.middleware';
+import requestPinResetSchema from '../schema/member/request-pin-reset.schema';
+import resetPinSchema from '../schema/member/reset-pin.schema';
 
 const router = express.Router();
+
+/**
+ * @route   POST /api/v1/member/request-pin-reset
+ * @desc    Request Security PIN reset (sends OTP via SMS and Email)
+ * @access  Public
+ */
+router.post(
+  "/request-pin-reset",
+  validateRequest(requestPinResetSchema),
+  handleErrorAsync(MemberController.requestPinReset)
+);
+
+/**
+ * @route   POST /api/v1/member/reset-pin
+ * @desc    Reset Security PIN (verify OTP and update PIN)
+ * @access  Public
+ */
+router.post(
+  "/reset-pin",
+  validateRequest(resetPinSchema),
+  handleErrorAsync(MemberController.resetSecurityPin)
+);
+
 
 // ============================================
 // PUBLIC ROUTES
@@ -128,6 +153,45 @@ router.patch(
   handleErrorAsync(AuthMiddleware.isAdmin),
   validateRequest(MemberSchema.memberBlock),
   handleErrorAsync(MemberController.blockMember)
+);
+
+/**
+ * @route   PATCH /api/v1/member/:id/unblock
+ * @desc    Unblock member
+ * @access  Protected (Admin)
+ */
+router.patch(
+  "/:id/unblock",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthMiddleware.isAdmin),
+  validateRequest(MemberSchema.memberById),
+  handleErrorAsync(MemberController.unBlockMember)
+);
+
+/**
+ * @route   PATCH /api/v1/member/:id/activate
+ * @desc    Activate member (set active status to true)
+ * @access  Protected (Admin)
+ */
+router.patch(
+  "/:id/activate",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthMiddleware.isAdmin),
+  validateRequest(MemberSchema.memberById),
+  handleErrorAsync(MemberController.activateMember)
+);
+
+/**
+ * @route   PATCH /api/v1/member/:id/deactivate
+ * @desc    Deactivate member (set active status to false)
+ * @access  Protected (Admin)
+ */
+router.patch(
+  "/:id/deactivate",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthMiddleware.isAdmin),
+  validateRequest(MemberSchema.memberById),
+  handleErrorAsync(MemberController.deactivateMember)
 );
 
 // ============================================

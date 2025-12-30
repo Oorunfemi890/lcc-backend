@@ -14,6 +14,7 @@ const getAllFirstTimers = {
         startDate: Joi.date().iso().optional(),
         endDate: Joi.date().iso().optional(),
         interestedInJoining: Joi.boolean().optional(),
+        search: Joi.string().allow("").optional(),
     })
 };
 

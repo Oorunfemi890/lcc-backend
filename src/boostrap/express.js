@@ -20,6 +20,7 @@ import heroslide from '../routes/hero-slide.route'
 import dashboardRoute from '../routes/dashboard.route';
 import attendanceRoute from '../routes/attendance.route';
 import adminManagementRoute from '../routes/admin-management.route';
+import settingsRoute from '../routes/settings.route';
 
 module.exports = function () {
   app.use(bodyParser.json());
@@ -37,6 +38,7 @@ module.exports = function () {
   app.use("/api/v1/dashboard", dashboardRoute);
   app.use("/api/v1/attendance", attendanceRoute);
   app.use("/api/v1/admin", adminManagementRoute);
+  app.use("/api/v1/settings", settingsRoute);
 
 
 

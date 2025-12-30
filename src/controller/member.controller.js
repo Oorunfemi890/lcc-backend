@@ -1,10 +1,12 @@
 import db from "../../models";
 import { Op } from "sequelize";
-
-const { Member, Testimony, FollowUp, AdminUser } = db;
+import App from "../helpers/index.helper";
 import MailHelper from "../helpers/email.helper";
 import bcrypt from "bcryptjs";
-import App from "../helpers/index.helper";
+import { logger } from '../logger/winston';
+import MESSAGES from '../constant/messages.constant.js';
+import SmsService from '../service/sms.service.js';
+const { Member, Testimony, FollowUp, AdminUser } = db;
 
 class MemberController {
   static async createMember(req, res) {
@@ -105,9 +107,13 @@ class MemberController {
         params: { ...newMember.dataValues, tempPin: securityPin },
       });
 
+      const memberData = newMember.toJSON();
+      delete memberData.securityPin;
+      delete memberData.resetOtp;
+
       return res.status(201).send({
         message: "Member created successfully",
-        data: newMember
+        data: memberData
       });
 
     } catch (error) {
@@ -210,9 +216,13 @@ class MemberController {
         params: { ...newChildMember.dataValues, tempPin: process.env.DEFAULT_PIN },
       });
 
+      const memberData = newChildMember.toJSON();
+      delete memberData.securityPin;
+      delete memberData.resetOtp;
+
       return res.status(201).send({
         message: "Child member created successfully",
-        data: newChildMember
+        data: memberData
       });
 
     } catch (error) {
@@ -234,7 +244,8 @@ class MemberController {
 
       const children = await Member.findAll({
         where: { parentId },
-        order: [["createdAt", "DESC"]]
+        order: [["createdAt", "DESC"]],
+        attributes: { exclude: ["securityPin", "resetOtp"] }
       });
 
       return res.status(200).send({
@@ -288,10 +299,14 @@ class MemberController {
         lastName: member.lastName
       });
 
+      const memberData = member.toJSON();
+      delete memberData.securityPin;
+      delete memberData.resetOtp;
+
       // 5. Return member data with token
       return res.status(200).send({
         message: "Member verified successfully",
-        data: member,
+        data: memberData,
         token
       });
 
@@ -304,7 +319,7 @@ class MemberController {
   // ✅ Get All Members (Paginated + Filters)
   static async getAllMembers(req, res) {
     try {
-      let { page = 1, limit = 10, search, active, membershipType } = req.query;
+      let { page = 1, limit = 10, search, active, membershipType, isWorker } = req.query;
       page = parseInt(page);
       limit = parseInt(limit);
       const offset = (page - 1) * limit;
@@ -312,6 +327,7 @@ class MemberController {
       const where = {};
       if (active !== undefined) where.active = active === "true";
       if (membershipType) where.membershipType = membershipType;
+      if (isWorker !== undefined) where.isWorker = isWorker === "true";
 
       if (search) {
         where[Op.or] = [
@@ -326,7 +342,7 @@ class MemberController {
         limit,
         offset,
         order: [["createdAt", "DESC"]],
-        attributes: { exclude: ["blockReason"] },
+        attributes: { exclude: ["blockReason", "securityPin", "resetOtp"] },
       });
 
       return res.status(200).send({
@@ -385,8 +401,9 @@ class MemberController {
       const { id } = req.params;
       const member = await Member.findOne({
         where: { id },
+        attributes: { exclude: ["securityPin", "resetOtp"] },
         include: [
-          { model: AdminUser, as: "adminUser" },
+          { model: AdminUser, as: "adminUser", attributes: { exclude: ["password"] } },
           { model: FollowUp, as: "followUps" },
           { model: Testimony, as: "testimonies" },
         ],
@@ -412,7 +429,9 @@ class MemberController {
         return res.status(404).send({ message: "Member not found" });
       }
 
-      const updatedMember = await Member.findByPk(id);
+      const updatedMember = await Member.findByPk(id, {
+        attributes: { exclude: ["securityPin", "resetOtp"] }
+      });
       return res.status(200).send({ message: "Member updated successfully", data: updatedMember });
     } catch (error) {
       console.error("Error updating member:", error);
@@ -435,7 +454,9 @@ class MemberController {
         return res.status(404).send({ message: "Member not found" });
       }
 
-      const updatedMember = await Member.findByPk(memberId);
+      const updatedMember = await Member.findByPk(memberId, {
+        attributes: { exclude: ["securityPin", "resetOtp"] }
+      });
       return res.status(200).send({ message: "Profile updated successfully", data: updatedMember });
     } catch (error) {
       console.error("Error updating member profile:", error);
@@ -484,6 +505,210 @@ class MemberController {
     } catch (error) {
       console.error("Error unblocking member:", error);
       return res.status(500).send({ message: "Internal server error" });
+    }
+  }
+
+  // ✅ Activate Member (Set active status)
+  static async activateMember(req, res) {
+    try {
+      const { id } = req.params;
+      await Member.update({ active: true }, { where: { id } });
+      return res.status(200).send({ message: "Member activated successfully" });
+    } catch (error) {
+      console.error("Error activating member:", error);
+      return res.status(500).send({ message: "Internal server error" });
+    }
+  }
+
+  // ✅ Deactivate Member (Set inactive status)
+  static async deactivateMember(req, res) {
+    try {
+      const { id } = req.params;
+      await Member.update({ active: false }, { where: { id } });
+      return res.status(200).send({ message: "Member deactivated successfully" });
+    } catch (error) {
+      console.error("Error deactivating member:", error);
+      return res.status(500).send({ message: "Internal server error" });
+    }
+  }
+
+  // ✅ Request Security PIN Reset (Send OTP via SMS and Email)
+  static async requestPinReset(req, res) {
+    try {
+      const { phoneNumber } = req.body;
+
+      // Find member by phone number
+      const member = await Member.findOne({
+        where: { phoneNumber },
+        attributes: ['id', 'firstName', 'lastName', 'phoneNumber', 'email']
+      });
+
+      if (!member) {
+        return res.status(404).send({
+          message: "Member not found with this phone number",
+          success: false
+        });
+      }
+
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Store OTP with expiry (60 minutes)
+      const otpExpiry = new Date(Date.now() + 60 * 60 * 1000);
+
+      // Update member with OTP and expiry
+      await Member.update(
+        {
+          resetOtp: otp,
+          resetOtpExpiry: otpExpiry
+        },
+        { where: { id: member.id } }
+      );
+
+      // Send OTP via SMS
+      let smsSent = false;
+      let emailSent = false;
+
+      try {
+        const smsService = new SmsService();
+        const smsMessage = MESSAGES.PIN_RESET.OTP_SMS(otp);
+
+        // Use transactional (DND) route for OTP delivery
+        await smsService.send(member.phoneNumber, smsMessage);
+        smsSent = true;
+      } catch (smsError) {
+        logger.error('Failed to send OTP SMS:', smsError);
+      }
+
+      // Send OTP via Email (if email exists)
+      if (member.email) {
+        try {
+          await MailHelper.sendMail({
+            to: member.email,
+            subject: MESSAGES.PIN_RESET.OTP_EMAIL_SUBJECT,
+            template: 'pin-reset-otp',
+            params: {
+              name: `${member.firstName} ${member.lastName}`,
+              otp: otp,
+              expiresIn: '60 minutes'
+            }
+          });
+
+          emailSent = true;
+          logger.info(`PIN reset OTP sent via email to ${member.email}`);
+        } catch (emailError) {
+          logger.error('Failed to send OTP email:', emailError);
+        }
+      }
+
+      // Check if at least one method succeeded
+      if (!smsSent && !emailSent) {
+        return res.status(500).send({
+          message: "Failed to send OTP. Please try again.",
+          success: false
+        });
+      }
+
+      // Build success message based on what was sent
+      let successMessage = "OTP sent successfully";
+      const sentMethods = [];
+      if (smsSent) sentMethods.push("SMS");
+      if (emailSent) sentMethods.push("email");
+
+      if (sentMethods.length > 0) {
+        successMessage += ` via ${sentMethods.join(" and ")}`;
+      }
+
+      return res.status(200).send({
+        message: successMessage,
+        success: true,
+        data: {
+          phoneNumber: member.phoneNumber,
+          email: member.email || null,
+          sentVia: sentMethods,
+          expiresIn: "60 minutes"
+        }
+      });
+
+    } catch (error) {
+      logger.error("Error requesting PIN reset:", error);
+      return res.status(500).send({
+        message: "Internal server error",
+        success: false
+      });
+    }
+  }
+
+  // ✅ Reset Security PIN (Verify OTP and Update PIN)
+  static async resetSecurityPin(req, res) {
+    try {
+      const { phoneNumber, otp, newPin } = req.body;
+
+      // Find member by phone number
+      const member = await Member.findOne({
+        where: { phoneNumber }
+      });
+
+      if (!member) {
+        return res.status(404).send({
+          message: "Member not found",
+          success: false
+        });
+      }
+
+      // Check if OTP exists
+      if (!member.resetOtp) {
+        return res.status(400).send({
+          message: "No OTP request found. Please request a new OTP.",
+          success: false
+        });
+      }
+
+      // Check if OTP has expired
+      if (new Date() > new Date(member.resetOtpExpiry)) {
+        return res.status(400).send({
+          message: "OTP has expired. Please request a new one.",
+          success: false
+        });
+      }
+
+      // Verify OTP
+      if (member.resetOtp !== otp) {
+        return res.status(400).send({
+          message: "Invalid OTP. Please check and try again.",
+          success: false
+        });
+      }
+
+      // Hash the new PIN using the same logic as createMember
+      // securityPin hash = hash(newPin + phoneNumber + dateOfBirth)
+      const dobString = member.dateOfBirth ? new Date(member.dateOfBirth).toISOString().split('T')[0] : '';
+      const stringToHash = `${newPin}${phoneNumber}${dobString}`;
+      const hashedPin = await bcrypt.hash(stringToHash, 10);
+
+      // Update member with new PIN and clear OTP
+      await Member.update(
+        {
+          securityPin: hashedPin,
+          resetOtp: null,
+          resetOtpExpiry: null
+        },
+        { where: { id: member.id } }
+      );
+
+      logger.info(`Security PIN reset successfully for member ${member.id}`);
+
+      return res.status(200).send({
+        message: "Security PIN reset successfully",
+        success: true
+      });
+
+    } catch (error) {
+      logger.error("Error resetting security PIN:", error);
+      return res.status(500).send({
+        message: "Internal server error",
+        success: false
+      });
     }
   }
 }

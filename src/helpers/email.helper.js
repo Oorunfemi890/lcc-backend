@@ -2,7 +2,7 @@ import MailService from "../service/mail.service";
 
 class MailHelper {
   static async sendMail({
-    from = "info@libertychristiancentre.com",
+    from = process.env.SMTP_USER,
     to,
     subject,
     template,

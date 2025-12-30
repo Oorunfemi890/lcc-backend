@@ -11,12 +11,22 @@ module.exports = {
       },
       firstTimerId: {
         type: Sequelize.UUID,
-        allowNull: false,
+        allowNull: true, // Changed to allow NULL for Member follow-ups
         references: {
           model: "FirstTimers",
           key: "id",
         },
         onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      },
+      targetMemberId: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        references: {
+          model: "Members",
+          key: "id",
+        },
+        onDelete: "SET NULL",
         onUpdate: "CASCADE",
       },
       assignedToMemberId: {
@@ -30,14 +40,9 @@ module.exports = {
         onUpdate: "CASCADE",
       },
       followUpType: {
-        type: Sequelize.ENUM(
-          "phone_call",
-          "home_visit",
-          "church_visit",
-          "whatsapp",
-          "email"
-        ),
+        type: Sequelize.ARRAY(Sequelize.STRING), // Changed to ARRAY to support multiple types
         allowNull: false,
+        defaultValue: [],
       },
       scheduledDate: {
         type: Sequelize.DATEONLY,
@@ -89,6 +94,7 @@ module.exports = {
 
     // Add indexes
     await queryInterface.addIndex("FollowUps", ["firstTimerId"]);
+    await queryInterface.addIndex("FollowUps", ["targetMemberId"]);
     await queryInterface.addIndex("FollowUps", ["assignedToMemberId"]);
     await queryInterface.addIndex("FollowUps", ["status"]);
     await queryInterface.addIndex("FollowUps", ["scheduledDate"]);

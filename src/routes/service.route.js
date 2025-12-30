@@ -45,8 +45,8 @@ router.get(
       */
 router.get(
   "/group-by-day",
-  handleErrorAsync(AuthMiddleware.verifyToken),
-  handleErrorAsync(AuthMiddleware.isAdmin),
+  // handleErrorAsync(AuthMiddleware.verifyToken),
+  // handleErrorAsync(AuthMiddleware.isAdmin),
   handleErrorAsync(ServiceController.getServicesByDayOfWeek)
 );
 
