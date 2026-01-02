@@ -104,7 +104,7 @@ class MemberController {
         to: newMember.email,
         subject: "Welcome Onboard",
         template: "welcome",
-        params: { ...newMember.dataValues, tempPin: securityPin },
+        params: { ...newMember.dataValues, tempPin: securityPin, churchName: process.env.CHURCH_NAME },
       });
 
       const memberData = newMember.toJSON();
