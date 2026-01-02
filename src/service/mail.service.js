@@ -21,12 +21,16 @@ class MailService {
     // SMTP configuration
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
+      port: parseInt(process.env.SMTP_PORT),
       secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
+      requireTLS: process.env.SMTP_PORT == 587, // true for 587
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
   }
 
