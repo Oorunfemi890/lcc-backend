@@ -20,8 +20,8 @@ class SmsService {
     async sendBulkSms(recipients, message) {
         try {
             // Check global SMS setting
-            const smsEnabled = await db.Settings.getSetting('sms');
-            if (smsEnabled === 'false') {
+            const smsEnabled = await db.Settings.isActive('sms');
+            if (!smsEnabled) {
                 logger.info('SMS sending is disabled in settings. Skipping bulk SMS.');
                 return false;
             }
@@ -94,8 +94,8 @@ class SmsService {
         try {
             // Check global SMS setting unless bypassed
 
-            const smsEnabled = await db.Settings.getSetting('sms');
-            if (smsEnabled === 'false') {
+            const smsEnabled = await db.Settings.isActive('sms');
+            if (!smsEnabled) {
                 logger.info('SMS sending is disabled in settings. Skipping SMS.');
                 return false;
             }
@@ -171,8 +171,8 @@ class SmsService {
     async sendVoiceCall(to, message) {
         try {
             // Check global Voice Call setting
-            const voiceEnabled = await db.Settings.getSetting('voice_call');
-            if (voiceEnabled === 'false') {
+            const voiceEnabled = await db.Settings.isActive('voice_call');
+            if (!voiceEnabled) {
                 logger.info('Voice call is disabled in settings. Skipping voice call.');
                 return false;
             }

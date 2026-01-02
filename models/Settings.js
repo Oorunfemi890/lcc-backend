@@ -13,6 +13,16 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Check if a setting is active
+         * @param {string} key 
+         * @returns {Promise<boolean>}
+         */
+        static async isActive(key) {
+            const setting = await this.findByPk(key);
+            return setting ? setting.active : false;
+        }
+
+        /**
          * Get a specific setting value by key
          * @param {string} key 
          * @returns {Promise<string|null>} value
@@ -59,6 +69,11 @@ module.exports = (sequelize, DataTypes) => {
         },
         value: {
             type: DataTypes.TEXT,
+            allowNull: false
+        },
+        active: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true,
             allowNull: false
         },
         description: DataTypes.TEXT

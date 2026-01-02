@@ -12,8 +12,8 @@ class MailHelper {
   }) {
     try {
 
-      const emailEnabled = await db.Settings.getSetting('email');
-      if (emailEnabled === 'false') {
+      const emailEnabled = await db.Settings.isActive('email');
+      if (!emailEnabled) {
         logger.info('Email sending is disabled in settings. Skipping email.');
         return false;
       }
