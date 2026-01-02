@@ -39,15 +39,15 @@ deploy-dev:
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $RENDER_API_KEY" \
         -d '{}')
-      
+
       # Extract ID
       DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
-      
+
       if [ -z "$DEPLOY_ID" ]; then 
         echo "❌ Failed to trigger deploy or get ID: $RESPONSE"
         exit 1
       fi
-      
+
       echo "✅ Triggered deploy with ID: $DEPLOY_ID"
 
       # Poll status
@@ -170,8 +170,8 @@ deploy-prod:
     - echo "SERVICE_URL=$SERVICE_URL" >> ../terraform.env
     - echo "SERVICE_NAME=$SERVICE_NAME" >> ../terraform.env
     - echo "✅ Infrastructure provisioned"
-    - echo "   Service Name: $SERVICE_NAME"
-    - echo "   Service URL: $SERVICE_URL"
+    - echo "   Service Name $SERVICE_NAME"
+    - echo "   Service URL $SERVICE_URL"
     - cd ..
     
     # ========== STEP 3: BUILD DOCKER IMAGE ==========
@@ -180,7 +180,7 @@ deploy-prod:
     - docker push $IMAGE_NAME:$IMAGE_TAG
     - docker push $IMAGE_NAME:latest
     - echo "✅ Docker image built and pushed"
-    - echo "   Image: $IMAGE_NAME:$IMAGE_TAG"
+    - echo "   Image $IMAGE_NAME:$IMAGE_TAG"
     
     # ========== STEP 4: DEPLOY TO CLOUD RUN ==========
     - echo "🚢 Step 4/4 - Deploying to Cloud Run..."
@@ -199,7 +199,7 @@ deploy-prod:
         --timeout 300 \
         --port 8080
     - echo "✅ Production deployment completed successfully"
-    - echo "🌐 Service URL: $SERVICE_URL"
+    - echo "🌐 Service URL $SERVICE_URL"
     - gcloud run services describe $SERVICE_NAME --region $GCP_REGION --format 'value(status.url)'
   artifacts:
     paths:
@@ -228,14 +228,14 @@ rollback-prod:
     # Use the service name from CI/CD variables
     - export SERVICE_NAME=$CLOUD_RUN_SERVICE_NAME
     
-    - echo "⏮️ Rolling back service: $SERVICE_NAME"
+    - echo "⏮️ Rolling back service $SERVICE_NAME"
     - |
       PREVIOUS_REVISION=$(gcloud run revisions list \
         --service $SERVICE_NAME \
         --region $GCP_REGION \
         --format="value(name)" \
         --limit=2 | tail -n 1)
-    - echo "Rolling back to revision: $PREVIOUS_REVISION"
+    - echo "Rolling back to revision $PREVIOUS_REVISION"
     - |
       gcloud run services update-traffic $SERVICE_NAME \
         --region $GCP_REGION \
