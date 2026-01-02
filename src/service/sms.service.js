@@ -55,6 +55,10 @@ class SmsService {
                 api_key: this.smsApiKey,
             };
 
+            if (process.env.NODE_ENV_CHECKER != 'production') {
+                console.log('Termii SMS payload not Allowed to send', payload);
+                return
+            }
             const response = await axios.post(this.smsApiUrl, payload, {
                 headers: {
                     'Content-Type': 'application/json',

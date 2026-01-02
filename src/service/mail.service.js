@@ -77,7 +77,7 @@ class MailService {
 
       this.transporter.sendMail(mailOptions, function (error, info) {
         if (error) {
-          logger.error("Email send error: ", error.message);
+          logger.error("Email send error: ", error);
           return reject({ message: "failed", error: error.message });
         }
         logger.info("Email sent: ", info.response);
