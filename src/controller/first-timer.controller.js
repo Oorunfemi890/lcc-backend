@@ -136,7 +136,7 @@ class FirstTimerController {
         data: rows,
       });
     } catch (error) {
-      console.error("Error fetching first timers:", error);
+      logger.error("Error fetching first timers:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -167,7 +167,7 @@ class FirstTimerController {
         data: firstTimer,
       });
     } catch (error) {
-      console.error("Error fetching first timer:", error);
+      logger.error("Error fetching first timer:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -192,7 +192,7 @@ class FirstTimerController {
         data: firstTimer,
       });
     } catch (error) {
-      console.error("Error updating first timer:", error);
+      logger.error("Error updating first timer:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -213,7 +213,7 @@ class FirstTimerController {
 
       return res.status(200).send({ message: "First timer deleted successfully" });
     } catch (error) {
-      console.error("Error deleting first timer:", error);
+      logger.error("Error deleting first timer:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }

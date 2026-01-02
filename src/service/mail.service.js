@@ -48,7 +48,7 @@ class MailService {
         }
         return await ejs.renderFile(file, this.params, {}, (error, result) => {
           if (error) {
-            console.error(error);
+            logger.error(error);
             reject(error);
           }
           return result
@@ -56,7 +56,7 @@ class MailService {
               return resolve(data);
             })
             .catch((error) => {
-              console.log("Error rendering template: ", error);
+              logger.info("Error rendering template: ", error);
               reject(error);
             });
         });

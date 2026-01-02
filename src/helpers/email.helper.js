@@ -1,5 +1,6 @@
 import MailService from "../service/mail.service";
 import db from '../../models';
+import { logger } from "../logger/winston";
 
 class MailHelper {
   static async sendMail({
@@ -13,7 +14,7 @@ class MailHelper {
 
       const emailEnabled = await db.Settings.getSetting('email');
       if (emailEnabled === 'false') {
-        console.log('Email sending is disabled in settings. Skipping email.');
+        logger.info('Email sending is disabled in settings. Skipping email.');
         return false;
       }
 
@@ -21,7 +22,7 @@ class MailHelper {
       mail.send();
       return true;
     } catch (error) {
-      console.error("Email send failed:", error.message);
+      logger.error(`Email send failed: ${error.message}`);
       return false;
     }
   }

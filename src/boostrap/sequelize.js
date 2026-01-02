@@ -9,7 +9,7 @@ module.exports = function () {
   // Option 1: Use DATABASE_URL if available (recommended for Supabase)
 
   if (config.DATABASE_URL) {
-      console.log("config.DATABASE", config);
+    logger.info(`config.DATABASE: ${JSON.stringify(config)}`);
 
     sequelize = new Sequelize(config.DATABASE_URL, {
       dialect: config.dialect,

@@ -57,7 +57,7 @@ class AuthController {
 
       res.status(201).send({ message: "Successful", user: { ...admin, token } });
     } catch (error) {
-      console.log("error: ", error);
+      logger.error("Create admin error: ", error);
       res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -384,7 +384,7 @@ class AuthController {
       });
     } catch (error) {
       await t.rollback();
-      console.error("Error creating admin:", error);
+      logger.error("Error creating admin:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -444,7 +444,7 @@ class AuthController {
         })),
       });
     } catch (error) {
-      console.error("Error fetching admins:", error);
+      logger.error("Error fetching admins:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -481,7 +481,7 @@ class AuthController {
         },
       });
     } catch (error) {
-      console.error("Error fetching admin:", error);
+      logger.error("Error fetching admin:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -524,7 +524,7 @@ class AuthController {
         },
       });
     } catch (error) {
-      console.error("Error updating admin:", error);
+      logger.error("Error updating admin:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -542,7 +542,7 @@ class AuthController {
       await admin.destroy();
       return res.status(200).send({ message: "Admin deleted successfully" });
     } catch (error) {
-      console.error("Error deleting admin:", error);
+      logger.error("Error deleting admin:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }

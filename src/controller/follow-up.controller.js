@@ -153,7 +153,7 @@ class FollowUpController {
         data: fullFollowUp,
       });
     } catch (error) {
-      console.error("Error creating follow-up:", error);
+      logger.error("Error creating follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -217,7 +217,7 @@ class FollowUpController {
         data: rows,
       });
     } catch (error) {
-      console.error("Error fetching follow-ups:", error);
+      logger.error("Error fetching follow-ups:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -242,7 +242,7 @@ class FollowUpController {
         data: followUp,
       });
     } catch (error) {
-      console.error("Error fetching follow-up:", error);
+      logger.error("Error fetching follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -269,7 +269,7 @@ class FollowUpController {
         data: updatedFollowUp,
       });
     } catch (error) {
-      console.error("Error updating follow-up:", error);
+      logger.error("Error updating follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -286,7 +286,7 @@ class FollowUpController {
 
       return res.status(200).send({ message: "Follow-up deleted successfully" });
     } catch (error) {
-      console.error("Error deleting follow-up:", error);
+      logger.error("Error deleting follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }

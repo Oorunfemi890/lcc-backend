@@ -27,13 +27,13 @@ class SmsService {
             }
 
             if (!this.smsApiKey) {
-                console.warn('Termii API key not configured. Skipping bulk SMS send.');
+                logger.warn('Termii API key not configured. Skipping bulk SMS send.');
                 return;
             }
 
             const promises = recipients.map((recipient) =>
                 this.send(recipient, message).catch((error) => {
-                    console.error(`Failed to send SMS to ${recipient}: ${error.message}`);
+                    logger.error(`Failed to send SMS to ${recipient}: ${error.message}`);
                 })
             );
 
@@ -102,7 +102,7 @@ class SmsService {
 
 
             if (!this.smsApiKey) {
-                console.warn('Termii API key not configured. Skipping transactional SMS send.');
+                logger.warn('Termii API key not configured. Skipping transactional SMS send.');
                 return;
             }
 
@@ -180,7 +180,7 @@ class SmsService {
 
 
             if (!this.smsApiKey) {
-                console.warn('Termii API key not configured. Skipping Voice Call.');
+                logger.warn('Termii API key not configured. Skipping Voice Call.');
                 return;
             }
 

@@ -2,6 +2,7 @@ import db from "../../models";
 import { Op } from "sequelize";
 
 const Celebrant = db.Celebrant;
+import { logger } from "../logger/winston";
 
 class CelebrantController {
   /**
@@ -40,7 +41,7 @@ class CelebrantController {
         .status(201)
         .send({ message: "Celebrant created successfully" });
     } catch (error) {
-      console.log("Error creating celebrant: ", error);
+      logger.error("Error creating celebrant: ", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -67,7 +68,7 @@ class CelebrantController {
         celebrant: updatedCelebrant,
       });
     } catch (error) {
-      console.log("Error updating celebrant: ", error);
+      logger.error("Error updating celebrant: ", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -90,7 +91,7 @@ class CelebrantController {
         .status(200)
         .send({ message: "Celebrant deleted successfully" });
     } catch (error) {
-      console.log("Error deleting celebrant: ", error);
+      logger.error("Error deleting celebrant: ", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -149,7 +150,7 @@ class CelebrantController {
         message: "Celebrant statistics retrieved successfully"
       });
     } catch (error) {
-      console.error("Error fetching celebrant stats:", error);
+      logger.error("Error fetching celebrant stats:", error);
       return res.status(500).json({
         success: false,
         message: "Failed to fetch celebrant statistics",
@@ -203,7 +204,7 @@ class CelebrantController {
         celebrants: rows,
       });
     } catch (error) {
-      console.log("Error fetching celebrants: ", error);
+      logger.error("Error fetching celebrants: ", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }

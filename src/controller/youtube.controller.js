@@ -1,4 +1,5 @@
 import YoutubeService from "../service/youtube.service";
+import { logger } from "../logger/winston";
 
 class YoutubeController {
     static async getLatestVideos(req, res) {
@@ -11,7 +12,7 @@ class YoutubeController {
                 data: videos
             });
         } catch (error) {
-            console.error("Error fetching videos:", error.message);
+            logger.error(`Error fetching videos: ${error.message}`);
             return res.status(500).send({ message: "Internal server error" });
         }
     }
@@ -25,7 +26,7 @@ class YoutubeController {
                 data: channel
             });
         } catch (error) {
-            console.error("Error fetching channel info:", error);
+            logger.error("Error fetching channel info:", error);
             return res.status(500).send({ message: "Internal server error" });
         }
     }
