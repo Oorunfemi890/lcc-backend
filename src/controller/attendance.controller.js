@@ -2,6 +2,7 @@ import db from "../../models";
 import { Op } from "sequelize";
 
 const { Attendance } = db;
+import { logger } from "../logger/winston";
 
 class AttendanceController {
     // Create new attendance record
@@ -43,7 +44,7 @@ class AttendanceController {
             });
 
         } catch (error) {
-            console.error("Error creating attendance:", error);
+            logger.error("Error creating attendance:", error);
             return res.status(500).send({ message: "Internal server error" });
         }
     }
@@ -101,7 +102,7 @@ class AttendanceController {
             });
 
         } catch (error) {
-            console.error("Error fetching attendance records:", error);
+            logger.error("Error fetching attendance records:", error);
             return res.status(500).send({ message: "Internal server error" });
         }
     }
@@ -118,7 +119,7 @@ class AttendanceController {
 
             return res.status(200).send({ message: "Attendance record fetched successfully", data: attendance });
         } catch (error) {
-            console.error("Error fetching attendance record:", error);
+            logger.error("Error fetching attendance record:", error);
             return res.status(500).send({ message: "Internal server error" });
         }
     }
@@ -174,7 +175,7 @@ class AttendanceController {
             return res.status(200).send({ message: "Attendance updated successfully", data: updatedAttendance });
 
         } catch (error) {
-            console.error("Error updating attendance:", error);
+            logger.error("Error updating attendance:", error);
             return res.status(500).send({ message: "Internal server error" });
         }
     }
@@ -191,7 +192,7 @@ class AttendanceController {
 
             return res.status(200).send({ message: "Attendance record deleted successfully" });
         } catch (error) {
-            console.error("Error deleting attendance:", error);
+            logger.error("Error deleting attendance:", error);
             return res.status(500).send({ message: "Internal server error" });
         }
     }
@@ -258,7 +259,7 @@ class AttendanceController {
                 }
             });
         } catch (error) {
-            console.error("Error fetching attendance stats:", error);
+            logger.error("Error fetching attendance stats:", error);
             return res.status(500).send({ message: "Internal server error" });
         }
     }

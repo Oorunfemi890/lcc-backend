@@ -1,4 +1,5 @@
 import WhatsappService from "../service/whatsapp.service";
+import { logger } from "../logger/winston";
 
 class WhatsappHelper {
     static async send(to, body) {
@@ -6,7 +7,7 @@ class WhatsappHelper {
             const whatsappService = new WhatsappService();
             return await whatsappService.send(to, body);
         } catch (error) {
-            console.error("WhatsappHelper Error:", error.message);
+            logger.error(`WhatsappHelper Error: ${error.message}`);
             return false;
         }
     }

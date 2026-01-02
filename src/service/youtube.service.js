@@ -1,4 +1,5 @@
 import axios from "axios";
+import { logger } from "../logger/winston";
 
 class YoutubeService {
 
@@ -40,7 +41,7 @@ class YoutubeService {
             }));
 
         } catch (error) {
-            console.error("Error getting last videos:", error.message);
+            logger.error(`Error getting last videos: ${error.message}`);
             throw error;
         }
     }
@@ -57,7 +58,7 @@ class YoutubeService {
             });
             return response.data.items[0];
         } catch (error) {
-            console.error("Error fetching channel info:", error.message);
+            logger.error(`Error fetching channel info: ${error.message}`);
             throw error;
         }
     }

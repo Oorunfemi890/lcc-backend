@@ -1,5 +1,6 @@
 import axios from "axios";
 import { logger } from "../logger/winston";
+import db from '../../models';
 
 class WhatsappService {
     constructor() {
@@ -13,9 +14,18 @@ class WhatsappService {
      * Send WhatsApp message to a single recipient
      * @param {string} to - Recipient phone number (e.g., +2348012345678 or 08012345678)
      * @param {string} message - WhatsApp message
+     * @param {boolean} bypassSettings - If true, ignores global WhatsApp disabled setting
      */
     async send(to, message) {
         try {
+
+            const whatsappEnabled = await db.Settings.getSetting('whatsapp');
+            if (whatsappEnabled === 'false') {
+                logger.info('WhatsApp sending is disabled in settings. Skipping WhatsApp message.');
+                return;
+            }
+
+
             if (!this.whatsappApiKey) {
                 logger.warn('Termii API key not configured. Skipping WhatsApp send.');
                 return;
@@ -29,7 +39,8 @@ class WhatsappService {
             logger.info(`WhatsApp message sent to ${phoneNumber.substring(0, 8)}...`);
         } catch (error) {
             logger.error(`Failed to send WhatsApp message: ${error.message}`);
-            throw error;
+            // Return false instead of throwing to prevent unhandled rejections in async calls
+            return false;
         }
     }
 
@@ -112,13 +123,20 @@ class WhatsappService {
      */
     async sendBulkMessages(recipients, message) {
         try {
+            // Check global setting for bulk
+            const whatsappEnabled = await db.Settings.getSetting('whatsapp');
+            if (whatsappEnabled === 'false') {
+                logger.info('WhatsApp sending is disabled in settings. Skipping bulk WhatsApp.');
+                return;
+            }
+
             if (!this.whatsappApiKey) {
                 logger.warn('Termii API key not configured. Skipping bulk send.');
                 return;
             }
 
             const promises = recipients.map((recipient) =>
-                this.send(recipient, message).catch((error) => {
+                this.send(recipient, message, true).catch((error) => {
                     logger.error(`Failed to send WhatsApp to ${recipient}: ${error.message}`);
                 })
             );

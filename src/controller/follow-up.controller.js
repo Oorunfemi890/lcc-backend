@@ -66,13 +66,6 @@ class FollowUpController {
 
       // 4. Handle Notification / Assignment Logic based on selected types
       try {
-        // Fetch global settings (Single DB Call)
-        const settings = await db.Settings.getAllSettingsAsObject();
-        const smsEnabled = settings['sms'];
-        const whatsappEnabled = settings['whatsapp'];
-        const emailEnabled = settings['email'];
-        const voiceCallEnabled = settings['voice_call'];
-
         // Ensure followUpType is an array
         const types = Array.isArray(followUpType) ? followUpType : [followUpType];
 
@@ -85,9 +78,9 @@ class FollowUpController {
             const visitTypes = types.filter(t => ['home_visit', 'church_visit'].includes(t)).join(', ');
             const msgBody = MESSAGES.FOLLOW_UP.WORKER_ASSIGNMENT(workerName, targetName, visitTypes, notes);
 
-            // Notify Worker via Email (check setting)
-            if (worker.email && emailEnabled !== 'false') {
-              await MailHelper.sendMail({
+            // Notify Worker via Email
+            if (worker.email) {
+              MailHelper.sendMail({
                 to: worker.email,
                 subject: `New Follow-Up Assignment: ${targetName}`,
                 template: 'generic-notification',
@@ -96,13 +89,13 @@ class FollowUpController {
                   title: `New Follow-Up Assignment`,
                   body: msgBody
                 }
-              }).catch(err => logger.error(`Failed to email worker ${worker.id}: ${err.message}`));
+              });
             }
 
-            // Notify Worker via WhatsApp (check setting)
-            if (worker.phoneNumber && whatsappEnabled !== 'false') {
+            // Notify Worker via WhatsApp
+            if (worker.phoneNumber) {
               const waService = new WhatsappService();
-              await waService.send(worker.phoneNumber, msgBody).catch(err => logger.error(`Failed to WA worker: ${err.message}`));
+              waService.send(worker.phoneNumber, msgBody);
             }
           }
         }
@@ -110,27 +103,27 @@ class FollowUpController {
         // Digital notifications to target
         const messageContent = `${notes} ${MESSAGES.FOLLOW_UP.FOOTER}`;
 
-        // Send Phone Call if included and enabled
-        if (types.includes('phone_call') && targetPhone && voiceCallEnabled !== 'false') {
+        // Send Phone Call if included
+        if (types.includes('phone_call') && targetPhone) {
           const smsService = new SmsService();
-          await smsService.sendVoiceCall(targetPhone, notes).catch(err => logger.error(`Failed voice call: ${err.message}`));
+          smsService.sendVoiceCall(targetPhone, notes);
         }
 
-        // Send SMS if included and enabled
-        if (types.includes('sms') && targetPhone && smsEnabled !== 'false') {
+        // Send SMS if included
+        if (types.includes('sms') && targetPhone) {
           const smsService = new SmsService();
-          await smsService.send(targetPhone, messageContent).catch(err => logger.error(`Failed SMS: ${err.message}`));
+          smsService.send(targetPhone, messageContent);
         }
 
-        // Send WhatsApp if included and enabled
-        if (types.includes('whatsapp') && targetPhone && whatsappEnabled !== 'false') {
+        // Send WhatsApp if included
+        if (types.includes('whatsapp') && targetPhone) {
           const waService = new WhatsappService();
-          await waService.send(targetPhone, messageContent).catch(err => logger.error(`Failed WA: ${err.message}`));
+          waService.send(targetPhone, messageContent);
         }
 
-        // Send Email if included and enabled
-        if (types.includes('email') && targetEmail && emailEnabled !== 'false') {
-          await MailHelper.sendMail({
+        // Send Email if included
+        if (types.includes('email') && targetEmail) {
+          MailHelper.sendMail({
             to: targetEmail,
             subject: 'Message from Liberty Christian Centre',
             template: 'generic-notification',
@@ -139,7 +132,7 @@ class FollowUpController {
               title: 'Message from LCC',
               body: notes
             }
-          }).catch(err => logger.error(`Failed Email: ${err.message}`));
+          });
         }
       } catch (notifyErr) {
         logger.error(`Notification Error in createFollowUp: ${notifyErr.message}`);
@@ -160,7 +153,7 @@ class FollowUpController {
         data: fullFollowUp,
       });
     } catch (error) {
-      console.error("Error creating follow-up:", error);
+      logger.error("Error creating follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -224,7 +217,7 @@ class FollowUpController {
         data: rows,
       });
     } catch (error) {
-      console.error("Error fetching follow-ups:", error);
+      logger.error("Error fetching follow-ups:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -249,7 +242,7 @@ class FollowUpController {
         data: followUp,
       });
     } catch (error) {
-      console.error("Error fetching follow-up:", error);
+      logger.error("Error fetching follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -276,7 +269,7 @@ class FollowUpController {
         data: updatedFollowUp,
       });
     } catch (error) {
-      console.error("Error updating follow-up:", error);
+      logger.error("Error updating follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -293,7 +286,7 @@ class FollowUpController {
 
       return res.status(200).send({ message: "Follow-up deleted successfully" });
     } catch (error) {
-      console.error("Error deleting follow-up:", error);
+      logger.error("Error deleting follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }

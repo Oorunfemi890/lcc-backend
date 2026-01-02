@@ -2,6 +2,7 @@
 "use strict";
 import db from "../../models";
 const { Program } = db
+import { logger } from "../logger/winston";
 
 class ProgramController {
   // Create Program
@@ -139,7 +140,7 @@ class ProgramController {
         message: "Program stats retrieved successfully"
       });
     } catch (error) {
-      console.error("Program stats error:", error);
+      logger.error("Program stats error:", error);
       return res.status(500).json({
         success: false,
         message: "Failed to fetch program stats",

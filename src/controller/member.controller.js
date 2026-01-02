@@ -100,7 +100,7 @@ class MemberController {
         countryCode,
       });
 
-      await MailHelper.sendMail({
+      MailHelper.sendMail({
         to: newMember.email,
         subject: "Welcome Onboard",
         template: "welcome",
@@ -117,7 +117,7 @@ class MemberController {
       });
 
     } catch (error) {
-      console.error("Error creating member:", error);
+      logger.error("Error creating member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -209,7 +209,7 @@ class MemberController {
         parentId
       });
 
-      await MailHelper.sendMail({
+      MailHelper.sendMail({
         to: newChildMember.email,
         subject: "Welcome Onboard",
         template: "welcome",
@@ -226,7 +226,7 @@ class MemberController {
       });
 
     } catch (error) {
-      console.error("Error creating child member:", error);
+      logger.error("Error creating child member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -253,7 +253,7 @@ class MemberController {
         data: children
       });
     } catch (error) {
-      console.error("Error fetching member children:", error);
+      logger.error("Error fetching member children:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -311,7 +311,7 @@ class MemberController {
       });
 
     } catch (error) {
-      console.error("Error looking up member:", error);
+      logger.error("Error looking up member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -356,7 +356,7 @@ class MemberController {
         data: rows,
       });
     } catch (error) {
-      console.error("Error fetching members:", error);
+      logger.error("Error fetching members:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -387,7 +387,7 @@ class MemberController {
         data: departments
       });
     } catch (error) {
-      console.error("Error fetching departments:", error);
+      logger.error("Error fetching departments:", error);
       return res.status(500).send({
         success: false,
         message: "Internal server error"
@@ -415,7 +415,7 @@ class MemberController {
 
       return res.status(200).send({ message: "Member fetched successfully", data: member });
     } catch (error) {
-      console.error("Error fetching member:", error);
+      logger.error("Error fetching member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -434,7 +434,7 @@ class MemberController {
       });
       return res.status(200).send({ message: "Member updated successfully", data: updatedMember });
     } catch (error) {
-      console.error("Error updating member:", error);
+      logger.error("Error updating member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -459,7 +459,7 @@ class MemberController {
       });
       return res.status(200).send({ message: "Profile updated successfully", data: updatedMember });
     } catch (error) {
-      console.error("Error updating member profile:", error);
+      logger.error("Error updating member profile:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -476,7 +476,7 @@ class MemberController {
       await member.update({ active: false });
       return res.status(200).send({ message: "Member deactivated successfully" });
     } catch (error) {
-      console.error("Error deleting member:", error);
+      logger.error("Error deleting member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -491,7 +491,7 @@ class MemberController {
       );
       return res.status(200).send({ message: "Member blocked successfully" });
     } catch (error) {
-      console.error("Error blocking member:", error);
+      logger.error("Error blocking member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -503,7 +503,7 @@ class MemberController {
       await Member.update({ active: true, blockReason: null }, { where: { id } });
       return res.status(200).send({ message: "Member unblocked successfully" });
     } catch (error) {
-      console.error("Error unblocking member:", error);
+      logger.error("Error unblocking member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -515,7 +515,7 @@ class MemberController {
       await Member.update({ active: true }, { where: { id } });
       return res.status(200).send({ message: "Member activated successfully" });
     } catch (error) {
-      console.error("Error activating member:", error);
+      logger.error("Error activating member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -527,7 +527,7 @@ class MemberController {
       await Member.update({ active: false }, { where: { id } });
       return res.status(200).send({ message: "Member deactivated successfully" });
     } catch (error) {
-      console.error("Error deactivating member:", error);
+      logger.error("Error deactivating member:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -574,16 +574,16 @@ class MemberController {
         const smsMessage = MESSAGES.PIN_RESET.OTP_SMS(otp);
 
         // Use transactional (DND) route for OTP delivery
-        await smsService.send(member.phoneNumber, smsMessage);
+        smsService.send(member.phoneNumber, smsMessage);
         smsSent = true;
       } catch (smsError) {
-        logger.error('Failed to send OTP SMS:', smsError);
+        logger.error('Failed to init SMS service:', smsError);
       }
 
       // Send OTP via Email (if email exists)
       if (member.email) {
         try {
-          await MailHelper.sendMail({
+          MailHelper.sendMail({
             to: member.email,
             subject: MESSAGES.PIN_RESET.OTP_EMAIL_SUBJECT,
             template: 'pin-reset-otp',

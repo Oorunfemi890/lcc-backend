@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 import crypto from "crypto";
 import MailHelper from "../helpers/email.helper.js";
 import WhatsappService from "../service/whatsapp.service.js";
+import { logger } from "../logger/winston";
 
 const { AdminUser, Member } = db;
 
@@ -64,7 +65,7 @@ class AdminManagementController {
                 message: "Admin users retrieved successfully"
             });
         } catch (error) {
-            console.error("List admins error:", error);
+            logger.error("List admins error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to fetch admin users",
@@ -147,7 +148,7 @@ class AdminManagementController {
             // Send credentials via email and WhatsApp
             try {
                 // Send email
-                const emailSent = await MailHelper.sendMail({
+                MailHelper.sendMail({
                     to: email,
                     subject: 'Admin Account Created - Liberty Christian Centre',
                     template: 'admin-credentials',
@@ -165,12 +166,12 @@ class AdminManagementController {
                     const whatsappService = new WhatsappService();
                     const whatsappMessage = `*Admin Account Created*\n\nHello ${member.firstName},\n\nYour admin account has been created for Liberty Christian Centre.\n\n*Email:* ${email}\n*Password:* ${generatedPassword}\n*Role:* ${role}\n\nPlease login and change your password immediately.\n\n*Login:* ${process.env.ADMIN_PORTAL_URL || 'https://admin.libertychristiancentre.com'}\n\n_- Liberty Christian Centre_`;
 
-                    await whatsappService.send(member.phoneNumber, whatsappMessage);
+                    whatsappService.send(member.phoneNumber, whatsappMessage);
                 }
 
-                console.log(`Admin credentials sent to ${email} via email and WhatsApp`);
+                logger.info(`Admin credentials sending initiated to ${email} via email and WhatsApp`);
             } catch (notificationError) {
-                console.error('Failed to send credentials notification:', notificationError);
+                logger.error('Failed to initiate credentials notification:', notificationError);
                 // Don't fail the request if notification fails
             }
 
@@ -192,7 +193,7 @@ class AdminManagementController {
                 message: "Admin user created successfully. Credentials sent via email and WhatsApp."
             });
         } catch (error) {
-            console.error("Create admin error:", error);
+            logger.error("Create admin error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to create admin user",
@@ -264,7 +265,7 @@ class AdminManagementController {
                 message: "Admin user updated successfully"
             });
         } catch (error) {
-            console.error("Update admin error:", error);
+            logger.error("Update admin error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to update admin user",
@@ -308,7 +309,7 @@ class AdminManagementController {
                 message: `Admin user ${blocked ? 'blocked' : 'unblocked'} successfully`
             });
         } catch (error) {
-            console.error("Block admin error:", error);
+            logger.error("Block admin error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to block/unblock admin user",
@@ -382,7 +383,7 @@ class AdminManagementController {
                 message: "Password reset successfully. New password has been sent to the admin's email."
             });
         } catch (error) {
-            console.error("Reset password error:", error);
+            logger.error("Reset password error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to reset admin password",
@@ -423,7 +424,7 @@ class AdminManagementController {
                 message: "Admin user deleted successfully"
             });
         } catch (error) {
-            console.error("Delete admin error:", error);
+            logger.error("Delete admin error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to delete admin user",

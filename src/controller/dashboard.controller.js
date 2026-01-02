@@ -2,6 +2,7 @@ import db from "../../models";
 import { Op } from "sequelize";
 
 const { Member, Program, Celebrant } = db;
+import { logger } from "../logger/winston";
 
 class DashboardController {
 
@@ -36,7 +37,7 @@ class DashboardController {
                 message: "Stats retrieved successfully"
             });
         } catch (error) {
-            console.error("Dashboard stats error:", error);
+            logger.error("Dashboard stats error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to fetch stats",
@@ -106,7 +107,7 @@ class DashboardController {
                 message: "Recent activities retrieved successfully"
             });
         } catch (error) {
-            console.error("Dashboard activities error:", error);
+            logger.error("Dashboard activities error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to fetch recent activities",
@@ -138,7 +139,7 @@ class DashboardController {
                 message: "Upcoming events retrieved successfully"
             });
         } catch (error) {
-            console.error("Dashboard upcoming events error:", error);
+            logger.error("Dashboard upcoming events error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to fetch upcoming events",
@@ -201,7 +202,7 @@ class DashboardController {
             });
 
         } catch (error) {
-            console.error("Dashboard chart data error:", error);
+            logger.error("Dashboard chart data error:", error);
             return res.status(500).json({
                 success: false,
                 message: "Failed to fetch chart data",
