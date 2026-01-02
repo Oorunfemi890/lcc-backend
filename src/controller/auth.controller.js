@@ -235,7 +235,7 @@ class AuthController {
           CLIENT_URL: process.env.CLIENT_URL,
         }
       );
-      await mail.send();
+      mail.send();
 
       return res
         .status(200)

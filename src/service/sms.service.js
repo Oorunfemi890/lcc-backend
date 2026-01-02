@@ -1,6 +1,7 @@
 import axios from "axios";
 import { logger } from "../logger/winston";
 import MESSAGES from '../constant/messages.constant.js';
+import db from '../../models';
 
 class SmsService {
     constructor() {
@@ -18,6 +19,13 @@ class SmsService {
      */
     async sendBulkSms(recipients, message) {
         try {
+            // Check global SMS setting
+            const smsEnabled = await db.Settings.getSetting('sms');
+            if (smsEnabled === 'false') {
+                logger.info('SMS sending is disabled in settings. Skipping bulk SMS.');
+                return false;
+            }
+
             if (!this.smsApiKey) {
                 console.warn('Termii API key not configured. Skipping bulk SMS send.');
                 return;
@@ -55,10 +63,7 @@ class SmsService {
                 api_key: this.smsApiKey,
             };
 
-            if (process.env.NODE_ENV_CHECKER != 'production') {
-                console.log('Termii SMS payload not Allowed to send', payload);
-                return
-            }
+
             const response = await axios.post(this.smsApiUrl, payload, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -70,11 +75,12 @@ class SmsService {
             });
 
             if (response.data.code !== 'ok') {
-                throw new Error(`Termii API error: ${JSON.stringify(response.data.message)}`);
+                logger.error(`Termii API error: ${JSON.stringify(response.data.message)}`);
             }
+            return true;
         } catch (error) {
             logger.error(`Termii SMS error: ${error.message}`);
-            throw error;
+            return false;
         }
     }
 
@@ -82,9 +88,19 @@ class SmsService {
      * Send transactional SMS (uses DND route for critical messages like OTP)
      * @param {string} to - Recipient phone number
      * @param {string} message - SMS message
+     * @param {boolean} bypassSettings - If true, ignores global SMS disabled setting (e.g. for OTPs)
      */
     async send(to, message) {
         try {
+            // Check global SMS setting unless bypassed
+
+            const smsEnabled = await db.Settings.getSetting('sms');
+            if (smsEnabled === 'false') {
+                logger.info('SMS sending is disabled in settings. Skipping SMS.');
+                return false;
+            }
+
+
             if (!this.smsApiKey) {
                 console.warn('Termii API key not configured. Skipping transactional SMS send.');
                 return;
@@ -132,7 +148,8 @@ class SmsService {
      */
     async sendOtp(to, otp) {
         const message = MESSAGES.OTP.VERIFICATION(otp);
-        await this.send(to, message);
+        // Force send OTPs even if SMS is disabled globally
+        await this.send(to, message, true);
     }
 
     /**
@@ -153,10 +170,14 @@ class SmsService {
      */
     async sendVoiceCall(to, message) {
         try {
-            // Placeholder for Termii Voice API
-            // Current Termii implementation in this file uses 'this.smsApiUrl' which is for SMS.
-            // We assume a separate endpoint/SDK call would be needed. 
-            // For now, we log the action as requested.
+            // Check global Voice Call setting
+            const voiceEnabled = await db.Settings.getSetting('voice_call');
+            if (voiceEnabled === 'false') {
+                logger.info('Voice call is disabled in settings. Skipping voice call.');
+                return false;
+            }
+
+
 
             if (!this.smsApiKey) {
                 console.warn('Termii API key not configured. Skipping Voice Call.');
@@ -165,11 +186,30 @@ class SmsService {
 
             const phoneNumber = this.normalizePhoneNumber(to);
 
-            // TODO: Implement actual Termii Voice API call here
-            // const response = await axios.post(...)
+            const payload = {
+                to: phoneNumber,
+                from: this.smsSenderId,
+                sms: message,
+                type: 'plain',
+                channel: 'voice',
+                api_key: this.smsApiKey,
+            };
 
-            logger.info(`[MOCK] Termii Voice Call triggered to ${phoneNumber} with message: "${message}"`);
-            return true;
+            const response = await axios.post(this.smsApiUrl, payload, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                timeout: 10000, // 10s timeout
+                validateStatus: (status) => status >= 200 && status < 600
+            });
+
+            if (response.data.code === 'ok') {
+                logger.info(`Termii Voice Call triggered to ${phoneNumber}`);
+                return true;
+            } else {
+                logger.error(`Termii Voice Call failed: ${JSON.stringify(response.data)}`);
+                return false;
+            }
         } catch (error) {
             logger.error(`Failed to trigger Voice Call: ${error.message}`);
             return false;

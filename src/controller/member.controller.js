@@ -100,7 +100,7 @@ class MemberController {
         countryCode,
       });
 
-      await MailHelper.sendMail({
+      MailHelper.sendMail({
         to: newMember.email,
         subject: "Welcome Onboard",
         template: "welcome",
@@ -209,7 +209,7 @@ class MemberController {
         parentId
       });
 
-      await MailHelper.sendMail({
+      MailHelper.sendMail({
         to: newChildMember.email,
         subject: "Welcome Onboard",
         template: "welcome",
@@ -574,16 +574,16 @@ class MemberController {
         const smsMessage = MESSAGES.PIN_RESET.OTP_SMS(otp);
 
         // Use transactional (DND) route for OTP delivery
-        await smsService.send(member.phoneNumber, smsMessage);
+        smsService.send(member.phoneNumber, smsMessage);
         smsSent = true;
       } catch (smsError) {
-        logger.error('Failed to send OTP SMS:', smsError);
+        logger.error('Failed to init SMS service:', smsError);
       }
 
       // Send OTP via Email (if email exists)
       if (member.email) {
         try {
-          await MailHelper.sendMail({
+          MailHelper.sendMail({
             to: member.email,
             subject: MESSAGES.PIN_RESET.OTP_EMAIL_SUBJECT,
             template: 'pin-reset-otp',

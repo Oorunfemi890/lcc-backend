@@ -147,7 +147,7 @@ class AdminManagementController {
             // Send credentials via email and WhatsApp
             try {
                 // Send email
-                const emailSent = await MailHelper.sendMail({
+                MailHelper.sendMail({
                     to: email,
                     subject: 'Admin Account Created - Liberty Christian Centre',
                     template: 'admin-credentials',
@@ -165,12 +165,12 @@ class AdminManagementController {
                     const whatsappService = new WhatsappService();
                     const whatsappMessage = `*Admin Account Created*\n\nHello ${member.firstName},\n\nYour admin account has been created for Liberty Christian Centre.\n\n*Email:* ${email}\n*Password:* ${generatedPassword}\n*Role:* ${role}\n\nPlease login and change your password immediately.\n\n*Login:* ${process.env.ADMIN_PORTAL_URL || 'https://admin.libertychristiancentre.com'}\n\n_- Liberty Christian Centre_`;
 
-                    await whatsappService.send(member.phoneNumber, whatsappMessage);
+                    whatsappService.send(member.phoneNumber, whatsappMessage);
                 }
 
-                console.log(`Admin credentials sent to ${email} via email and WhatsApp`);
+                console.log(`Admin credentials sending initiated to ${email} via email and WhatsApp`);
             } catch (notificationError) {
-                console.error('Failed to send credentials notification:', notificationError);
+                console.error('Failed to initiate credentials notification:', notificationError);
                 // Don't fail the request if notification fails
             }
 

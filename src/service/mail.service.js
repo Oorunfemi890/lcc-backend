@@ -100,7 +100,8 @@ class MailService {
         const result = await this.sendViaSMTP(html);
         resolve(result);
       } catch (error) {
-        reject(error);
+        logger.error("MailService send error:", error);
+        resolve(false);
       }
     });
   }

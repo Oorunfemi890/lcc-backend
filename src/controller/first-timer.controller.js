@@ -29,32 +29,26 @@ class FirstTimerController {
 
         // Send Email (if email provided)
         if (email) {
-          await MailHelper.sendMail({
+          MailHelper.sendMail({
             to: email,
             subject: 'Welcome to Liberty Christian Centre',
             template: 'first-timer-welcome',
             params: {
               name: name
             }
-          }).catch(error => {
-            logger.error('Failed to send welcome email:', error);
           });
         }
 
         // Send SMS (if phone number provided)
         if (phoneNumber) {
           const smsService = new SmsService();
-          await smsService.send(phoneNumber, smsMessage).catch(error => {
-            logger.error('Failed to send welcome SMS:', error);
-          });
+          smsService.send(phoneNumber, smsMessage);
         }
 
         // Send WhatsApp (if phone number provided)
         if (phoneNumber) {
           const whatsappService = new WhatsappService();
-          await whatsappService.send(phoneNumber, whatsappMessage).catch(error => {
-            logger.error('Failed to send welcome WhatsApp:', error);
-          });
+          whatsappService.send(phoneNumber, whatsappMessage);
         }
 
         logger.info(`Welcome messages sent to ${name} (Email: ${email}, Phone: ${phoneNumber})`);
