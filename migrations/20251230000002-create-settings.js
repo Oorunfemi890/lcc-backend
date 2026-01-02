@@ -26,41 +26,9 @@ module.exports = {
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.fn('NOW'),
             },
+
+
         });
-
-        // Seed default settings
-        const defaultSettings = [
-            {
-                key: 'sms',
-                value: 'true',
-                description: 'Enable/Disable SMS notifications globally',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                key: 'whatsapp',
-                value: 'true',
-                description: 'Enable/Disable WhatsApp notifications globally',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                key: 'voice_call',
-                value: 'true',
-                description: 'Enable/Disable Voice Call notifications globally',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                key: 'email',
-                value: 'true',
-                description: 'Enable/Disable Email notifications globally',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        ];
-
-        await queryInterface.bulkInsert('Settings', defaultSettings);
     },
 
     down: async (queryInterface, Sequelize) => {

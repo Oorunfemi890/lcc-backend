@@ -13,6 +13,7 @@ class SettingsController {
             settings.forEach(setting => {
                 settingsMap[setting.key] = {
                     value: setting.value,
+                    active: setting.active,
                     description: setting.description
                 };
             });
@@ -34,7 +35,7 @@ class SettingsController {
     // ✅ Create new setting
     static async createSetting(req, res) {
         try {
-            const { key, value, description } = req.body;
+            const { key, value, description, active } = req.body;
 
             if (!key || value === undefined) {
                 return res.status(400).send({
@@ -55,6 +56,7 @@ class SettingsController {
             const setting = await Settings.create({
                 key,
                 value: String(value),
+                active: active !== undefined ? active : true,
                 description: description || `Custom setting: ${key}`
             });
 
@@ -76,12 +78,12 @@ class SettingsController {
     static async patchSetting(req, res) {
         try {
             const { key } = req.params;
-            const { value } = req.body;
+            const { value, active } = req.body;
 
-            if (value === undefined) {
+            if (value === undefined && active === undefined) {
                 return res.status(400).send({
                     success: false,
-                    message: "Value is required"
+                    message: "Value or Active status is required"
                 });
             }
 
@@ -93,7 +95,11 @@ class SettingsController {
                 });
             }
 
-            await setting.update({ value: String(value) });
+            const updates = {};
+            if (value !== undefined) updates.value = String(value);
+            if (active !== undefined) updates.active = active;
+
+            await setting.update(updates);
 
             return res.status(200).send({
                 success: true,

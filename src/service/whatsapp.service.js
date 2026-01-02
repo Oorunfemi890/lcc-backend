@@ -19,8 +19,8 @@ class WhatsappService {
     async send(to, message) {
         try {
 
-            const whatsappEnabled = await db.Settings.getSetting('whatsapp');
-            if (whatsappEnabled === 'false') {
+            const whatsappEnabled = await db.Settings.isActive('whatsapp');
+            if (!whatsappEnabled) {
                 logger.info('WhatsApp sending is disabled in settings. Skipping WhatsApp message.');
                 return;
             }
@@ -124,8 +124,8 @@ class WhatsappService {
     async sendBulkMessages(recipients, message) {
         try {
             // Check global setting for bulk
-            const whatsappEnabled = await db.Settings.getSetting('whatsapp');
-            if (whatsappEnabled === 'false') {
+            const whatsappEnabled = await db.Settings.isActive('whatsapp');
+            if (!whatsappEnabled) {
                 logger.info('WhatsApp sending is disabled in settings. Skipping bulk WhatsApp.');
                 return;
             }

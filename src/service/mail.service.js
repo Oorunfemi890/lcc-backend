@@ -1,7 +1,9 @@
 const path = require("path");
 const ejs = require("ejs-promise");
+const axios = require("axios");
 const nodemailer = require("nodemailer");
 const { logger } = require("../logger/winston");
+const db = require("../../models");
 
 class MailService {
   filename;
@@ -91,13 +93,61 @@ class MailService {
   }
 
   /**
+   * Send email via Generic API (ZeptoMail, Resend, etc.)
+   * @param {string} html - HTML content
+   */
+  async sendViaApi(html) {
+    try {
+      const url = process.env.PROVIDER_URL;
+      const apiKey = process.env.PROVIDER_API_KEY;
+
+      if (!url || !apiKey) {
+        throw new Error("Email API configuration missing (EMAIL_PROVIDER_URL or EMAIL_PROVIDER_API_KEY)");
+      }
+
+      const payload = {
+        from: this.from,
+        to: [this.to],
+        subject: this.subject,
+        html: html
+      };
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
+
+
+      const response = await axios.post(url, payload, { headers });
+
+      logger.info(`Email sent: ${JSON.stringify(response.data)}`);
+      return { message: "success", info: response.data };
+
+    } catch (error) {
+      const errorMsg = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      logger.error(`Email send error: ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+  }
+
+  /**
    * Send email with template
    */
   send() {
     return new Promise(async (resolve, reject) => {
       try {
         const html = await this.generateHtml();
-        const result = await this.sendViaSMTP(html);
+
+        // Check setting to determine method
+        const smtpEnable = await db.Settings.isActive('smtp_enable');
+
+        let result;
+        if (smtpEnable) {
+          result = await this.sendViaSMTP(html);
+        } else {
+          result = await this.sendViaApi(html);
+        }
+
         resolve(result);
       } catch (error) {
         logger.error("MailService send error:", error);
