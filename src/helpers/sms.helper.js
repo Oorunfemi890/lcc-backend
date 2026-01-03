@@ -1,4 +1,5 @@
 import SmsService from "../service/sms.service";
+import { logger } from "../logger/winston";
 
 class SmsHelper {
     static async send(to, body) {
@@ -6,7 +7,7 @@ class SmsHelper {
             const smsService = new SmsService();
             return await smsService.send(to, body);
         } catch (error) {
-            console.error("SmsHelper Error:", error.message);
+            logger.error(`SmsHelper Error: ${error.message}`);
             return false;
         }
     }

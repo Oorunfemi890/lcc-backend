@@ -15,7 +15,12 @@ import followup from '../routes/follow-up.route';
 import program from '../routes/program.route';
 import service from '../routes/service.route';
 import testimony from '../routes/testimony.route';
+
 import heroslide from '../routes/hero-slide.route'
+import dashboardRoute from '../routes/dashboard.route';
+import attendanceRoute from '../routes/attendance.route';
+import adminManagementRoute from '../routes/admin-management.route';
+import settingsRoute from '../routes/settings.route';
 
 module.exports = function () {
   app.use(bodyParser.json());
@@ -30,6 +35,10 @@ module.exports = function () {
   app.use("/api/v1/service", service);
   app.use("/api/v1/testimony", testimony);
   app.use("/api/v1/hero-slider", heroslide);
+  app.use("/api/v1/dashboard", dashboardRoute);
+  app.use("/api/v1/attendance", attendanceRoute);
+  app.use("/api/v1/admin", adminManagementRoute);
+  app.use("/api/v1/settings", settingsRoute);
 
 
 
@@ -37,9 +46,19 @@ module.exports = function () {
 
 
 
+  // Health check endpoints
   app.get("/health-check", (req, res) => {
     res.send("OK");
   });
+
+  app.get("/health", (req, res) => {
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      service: "lcc-backend"
+    });
+  });
+
 
   app.response = Object.create(customExpress);
 

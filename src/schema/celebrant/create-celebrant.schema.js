@@ -3,11 +3,11 @@ const Joi = require('joi');
 const createCelebrant = {
     body: Joi.object({
         name: Joi.string().min(2).max(100).optional(),
-        celebrationType: Joi.string().valid("birthday", "anniversary", "graduation", "wedding", "other").optional(),
+        celebrationType: Joi.string().valid("birthday", "baptism", "wedding", "graduation", "newborn", "anniversary", "promotion", "ordination", "other").optional(),
         celebrationDate: Joi.date().iso().optional(),
         contact: Joi.string().max(100).optional(),
         email: Joi.string().email().required(),
-        contactType: Joi.string().valid("phone", "email", "social", "other").optional(),
+        contactType: Joi.string().valid("phone", "email", "whatsapp").optional(),
         message: Joi.string().max(1000).optional(),
         isPublic: Joi.boolean().optional(),
         specialRequests: Joi.string().max(1000).optional(),

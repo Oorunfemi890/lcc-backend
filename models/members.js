@@ -187,6 +187,14 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: true
             },
+            resetOtp: {
+                type: DataTypes.STRING,
+                allowNull: true
+            },
+            resetOtpExpiry: {
+                type: DataTypes.DATE,
+                allowNull: true
+            },
             parentId: {
                 type: DataTypes.UUID,
                 allowNull: true,

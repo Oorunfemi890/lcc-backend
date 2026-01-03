@@ -2,7 +2,7 @@ import express from "express";
 import ProgramController from "../controller/program.controller";
 import { handleErrorAsync } from "../middleware/error-handler.middleware";
 import AuthMiddleware from "../middleware/auth.middleware";
-import  validateRequest  from "../middleware/validate-request.middleware";
+import validateRequest from "../middleware/validate-request.middleware";
 import ProgramSchema from "../schema/program";
 import ImageUploadMiddleware from '../middleware/image-upload.middleware'
 
@@ -44,6 +44,18 @@ router.get(
   "/upcoming",
   validateRequest(ProgramSchema.programGetAll),
   handleErrorAsync(ProgramController.findAllProgram)
+);
+
+/**
+ * @route   GET /api/program/stats
+ * @desc    Get program statistics
+ * @access  Protected (Admin)
+ */
+router.get(
+  "/stats",
+  handleErrorAsync(AuthMiddleware.verifyToken),
+  handleErrorAsync(AuthMiddleware.isAdmin),
+  handleErrorAsync(ProgramController.getStats)
 );
 
 /**

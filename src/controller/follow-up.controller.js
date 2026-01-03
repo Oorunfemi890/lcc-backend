@@ -1,5 +1,10 @@
 import db from "../../models";
 const { FollowUp, FirstTimer, Member } = db;
+import MailHelper from "../helpers/email.helper.js";
+import SmsService from "../service/sms.service.js";
+import WhatsappService from "../service/whatsapp.service.js";
+import { logger } from '../logger/winston';
+import MESSAGES from '../constant/messages.constant.js';
 
 class FollowUpController {
   // ✅ Create a follow-up
@@ -7,31 +12,138 @@ class FollowUpController {
     try {
       const {
         firstTimerId,
+        targetMemberId,
         assignedToMemberId,
         followUpType,
         scheduledDate,
-        notes,
+        notes, // This is the "Message" content
         nextFollowUpDate,
       } = req.body;
 
-      if (!firstTimerId || !followUpType || !scheduledDate) {
-        return res
-          .status(400)
-          .send({ message: "Missing required fields: {firstTimerId, followUpType, scheduledDate}" });
+      // 1. Validation
+      if ((!firstTimerId && !targetMemberId) || !followUpType || !scheduledDate) {
+        return res.status(400).send({
+          message: "Missing required fields: {firstTimerId OR targetMemberId, followUpType, scheduledDate}"
+        });
       }
 
+      // 2. Determine Target (FirstTimer or Member)
+      let targetUser = null;
+      let targetName = "";
+      let targetPhone = "";
+      let targetEmail = "";
+
+      if (firstTimerId) {
+        targetUser = await FirstTimer.findByPk(firstTimerId);
+        if (targetUser) {
+          targetName = `${targetUser.surname} ${targetUser.otherNames}`;
+          targetPhone = targetUser.phoneNumber;
+          targetEmail = targetUser.email;
+        }
+      } else if (targetMemberId) {
+        targetUser = await Member.findByPk(targetMemberId);
+        if (targetUser) {
+          targetName = `${targetUser.firstName} ${targetUser.lastName}`;
+          targetPhone = targetUser.phoneNumber;
+          targetEmail = targetUser.email;
+        }
+      }
+
+      if (!targetUser) {
+        return res.status(404).send({ message: "Target user (First Timer or Member) not found" });
+      }
+
+      // 3. Create FollowUp Record
       const followUp = await FollowUp.create({
-        firstTimerId,
-        assignedToMemberId,
+        firstTimerId: firstTimerId || null,
+        targetMemberId: targetMemberId || null,
+        assignedToMemberId: assignedToMemberId || null,
         followUpType,
         scheduledDate,
         notes,
         nextFollowUpDate,
       });
 
+      // 4. Handle Notification / Assignment Logic based on selected types
+      try {
+        // Ensure followUpType is an array
+        const types = Array.isArray(followUpType) ? followUpType : [followUpType];
+
+        // Check for Visit types -> Notify Worker
+        const hasVisit = types.some(t => ['home_visit', 'church_visit'].includes(t));
+        if (hasVisit && assignedToMemberId) {
+          const worker = await Member.findByPk(assignedToMemberId);
+          if (worker) {
+            const workerName = `${worker.firstName} ${worker.lastName}`;
+            const visitTypes = types.filter(t => ['home_visit', 'church_visit'].includes(t)).join(', ');
+            const msgBody = MESSAGES.FOLLOW_UP.WORKER_ASSIGNMENT(workerName, targetName, visitTypes, notes);
+
+            // Notify Worker via Email
+            if (worker.email) {
+              MailHelper.sendMail({
+                to: worker.email,
+                subject: `New Follow-Up Assignment: ${targetName}`,
+                template: 'generic-notification',
+                params: {
+                  name: workerName,
+                  title: `New Follow-Up Assignment`,
+                  body: msgBody
+                }
+              });
+            }
+
+            // Notify Worker via WhatsApp
+            if (worker.phoneNumber) {
+              const waService = new WhatsappService();
+              waService.send(worker.phoneNumber, msgBody);
+            }
+          }
+        }
+
+        // Digital notifications to target
+        const messageContent = `${notes} ${MESSAGES.FOLLOW_UP.FOOTER}`;
+
+        // Send Phone Call if included
+        if (types.includes('phone_call') && targetPhone) {
+          const smsService = new SmsService();
+          smsService.sendVoiceCall(targetPhone, notes);
+        }
+
+        // Send SMS if included
+        if (types.includes('sms') && targetPhone) {
+          const smsService = new SmsService();
+          smsService.send(targetPhone, messageContent);
+        }
+
+        // Send WhatsApp if included
+        if (types.includes('whatsapp') && targetPhone) {
+          const waService = new WhatsappService();
+          waService.send(targetPhone, messageContent);
+        }
+
+        // Send Email if included
+        if (types.includes('email') && targetEmail) {
+          MailHelper.sendMail({
+            to: targetEmail,
+            subject: 'Message from Liberty Christian Centre',
+            template: 'generic-notification',
+            params: {
+              name: targetName,
+              title: 'Message from LCC',
+              body: notes
+            }
+          });
+        }
+      } catch (notifyErr) {
+        logger.error(`Notification Error in createFollowUp: ${notifyErr.message}`);
+        // Do not fail the request creation
+      }
+
+      // 5. Return Response
       const fullFollowUp = await FollowUp.findByPk(followUp.id, {
         include: [
-          { model: FirstTimer, as: "firstTimer", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
+          { model: FirstTimer, as: "firstTimer", attributes: ["id", "surname", "otherNames", "phoneNumber"] },
+          { model: Member, as: "targetMember", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
           { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
         ],
       });
@@ -41,71 +153,74 @@ class FollowUpController {
         data: fullFollowUp,
       });
     } catch (error) {
-      console.error("Error creating follow-up:", error);
+      logger.error("Error creating follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
 
-// ✅ Get all follow-ups (paginated + filter by queries)
-static async getAllFollowUps(req, res) {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      followUpType,
-      assignedToMemberId,
-      firstTimerId,
-      startDate,
-      endDate,
-    } = req.query;
+  // ✅ Get all follow-ups (paginated + filter by queries)
+  static async getAllFollowUps(req, res) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        status,
+        followUpType,
+        assignedToMemberId,
+        firstTimerId,
+        startDate,
+        endDate,
+      } = req.query;
 
-    const where = {};
+      const where = {};
 
-    if (status) where.status = status;
-    if (followUpType) where.followUpType = followUpType;
-    if (assignedToMemberId) where.assignedToMemberId = assignedToMemberId;
-    if (firstTimerId) where.firstTimerId = firstTimerId;
+      if (status) where.status = status;
+      if (followUpType) where.followUpType = followUpType;
+      if (assignedToMemberId) where.assignedToMemberId = assignedToMemberId;
+      if (assignedToMemberId) where.assignedToMemberId = assignedToMemberId;
+      if (firstTimerId) where.firstTimerId = firstTimerId;
+      if (req.query.targetMemberId) where.targetMemberId = req.query.targetMemberId;
 
-    // Date range filter (scheduledDate)
-    if (startDate && endDate) {
-      where.scheduledDate = {
-        [db.Sequelize.Op.between]: [startDate, endDate],
-      };
-    } else if (startDate) {
-      where.scheduledDate = { [db.Sequelize.Op.gte]: startDate };
-    } else if (endDate) {
-      where.scheduledDate = { [db.Sequelize.Op.lte]: endDate };
-    }
+      // Date range filter (scheduledDate)
+      if (startDate && endDate) {
+        where.scheduledDate = {
+          [db.Sequelize.Op.between]: [startDate, endDate],
+        };
+      } else if (startDate) {
+        where.scheduledDate = { [db.Sequelize.Op.gte]: startDate };
+      } else if (endDate) {
+        where.scheduledDate = { [db.Sequelize.Op.lte]: endDate };
+      }
 
-    const offset = (page - 1) * limit;
+      const offset = (page - 1) * limit;
 
-    const { count, rows } = await FollowUp.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset,
-      order: [["scheduledDate", "DESC"]],
-      include: [
-        { model: FirstTimer, as: "firstTimer", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
-        { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
-      ],
-    });
-
-    return res.status(200).send({
-      message: "Follow-ups retrieved successfully",
-      pagination: {
-        total: count,
-        page: parseInt(page),
+      const { count, rows } = await FollowUp.findAndCountAll({
+        where,
         limit: parseInt(limit),
-        pages: Math.ceil(count / limit),
-      },
-      data: rows,
-    });
-  } catch (error) {
-    console.error("Error fetching follow-ups:", error);
-    return res.status(500).send({ message: "Internal server error" });
+        offset,
+        order: [["scheduledDate", "DESC"]],
+        include: [
+          { model: FirstTimer, as: "firstTimer", attributes: ["id", "surname", "otherNames", "phoneNumber"] },
+          { model: Member, as: "targetMember", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
+          { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
+        ],
+      });
+
+      return res.status(200).send({
+        message: "Follow-ups retrieved successfully",
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(count / limit),
+        },
+        data: rows,
+      });
+    } catch (error) {
+      logger.error("Error fetching follow-ups:", error);
+      return res.status(500).send({ message: "Internal server error" });
+    }
   }
-}
 
 
   static async getFollowUpById(req, res) {
@@ -113,7 +228,7 @@ static async getAllFollowUps(req, res) {
       const { id } = req.params;
       const followUp = await FollowUp.findByPk(id, {
         include: [
-          { model: FirstTimer, as: "firstTimer", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
+          { model: FirstTimer, as: "firstTimer", attributes: ["id", "surname", "otherNames", "phoneNumber"] },
           { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
         ],
       });
@@ -127,7 +242,7 @@ static async getAllFollowUps(req, res) {
         data: followUp,
       });
     } catch (error) {
-      console.error("Error fetching follow-up:", error);
+      logger.error("Error fetching follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -144,7 +259,7 @@ static async getAllFollowUps(req, res) {
 
       const updatedFollowUp = await FollowUp.findByPk(id, {
         include: [
-          { model: FirstTimer, as: "firstTimer", attributes: ["id", "firstName", "lastName", "phoneNumber"] },
+          { model: FirstTimer, as: "firstTimer", attributes: ["id", "surname", "otherNames", "phoneNumber"] },
           { model: Member, as: "assignedMember", attributes: ["id", "firstName", "lastName", "membershipType"] },
         ],
       });
@@ -154,7 +269,7 @@ static async getAllFollowUps(req, res) {
         data: updatedFollowUp,
       });
     } catch (error) {
-      console.error("Error updating follow-up:", error);
+      logger.error("Error updating follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -171,7 +286,7 @@ static async getAllFollowUps(req, res) {
 
       return res.status(200).send({ message: "Follow-up deleted successfully" });
     } catch (error) {
-      console.error("Error deleting follow-up:", error);
+      logger.error("Error deleting follow-up:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }

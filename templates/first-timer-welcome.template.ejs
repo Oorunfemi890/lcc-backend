@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Liberty Christian Centre</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .email-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .church-logo {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .church-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .email-content {
+            padding: 40px 30px;
+        }
+
+        .welcome-title {
+            color: #1e293b;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .greeting {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 25px;
+            color: #475569;
+        }
+
+        .service-schedule {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .schedule-title {
+            color: #1e293b;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .service-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .service-item:last-child {
+            border-bottom: none;
+        }
+
+        .service-day {
+            color: #4f46e5;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .service-time {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        .highlight-box {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .highlight-text {
+            color: #92400e;
+            font-size: 1.1rem;
+            font-weight: 600;
+            line-height: 1.6;
+        }
+
+        .email-footer {
+            background: #1e293b;
+            color: #cbd5e1;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .email-content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="email-header">
+            <div class="church-logo">⛪</div>
+            <h1 class="church-name">Liberty Christian Centre</h1>
+        </div>
+
+        <!-- Main Content -->
+        <div class="email-content">
+            <h2 class="welcome-title">Welcome to Our Church Family!</h2>
+
+            <div class="greeting">
+                <p>Dear <strong>
+                        <%= name %>
+                    </strong>,</p>
+
+                <p>We are absolutely thrilled that you visited <strong>Liberty Christian Centre</strong>! Your presence
+                    blessed us, and we're excited to have you as part of our church family.</p>
+
+                <p>At LCC, we believe in building a community rooted in faith, love, and service. We're committed to
+                    walking alongside you as you grow in your relationship with God and discover your purpose.</p>
+            </div>
+
+            <!-- Service Schedule -->
+            <div class="service-schedule">
+                <h3 class="schedule-title">📅 Join Us for Our Services</h3>
+
+                <div class="service-item">
+                    <div class="service-day">Sunday Service</div>
+                    <div class="service-time">Every Sunday at 8:00 AM</div>
+                </div>
+
+                <div class="service-item">
+                    <div class="service-day">Tuesday Service</div>
+                    <div class="service-time">Every Tuesday</div>
+                </div>
+
+                <div class="service-item">
+                    <div class="service-day">Thursday Service</div>
+                    <div class="service-time">Every Thursday</div>
+                </div>
+            </div>
+
+            <!-- Highlight Box -->
+            <div class="highlight-box">
+                <p class="highlight-text">
+                    We would be delighted to see you continue worshipping with us every Sunday at 8:00 AM!
+                    Your presence makes our church family complete. 🙏
+                </p>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="greeting">
+                <p><strong>What to Expect:</strong></p>
+                <p>
+                    • Inspiring worship and powerful messages<br>
+                    • A warm and welcoming community<br>
+                    • Opportunities to serve and grow<br>
+                    • Life-changing fellowship
+                </p>
+
+                <p>If you have any questions or need assistance, please don't hesitate to reach out. We're here for you!
+                </p>
+
+                <p>God bless you abundantly!</p>
+
+                <p><strong>The LCC Family</strong></p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+            <p class="footer-text">
+                "For where two or three gather in my name, there am I with them."<br>
+                <em>- Matthew 18:20</em>
+            </p>
+
+            <p class="footer-text">
+                &copy; <%= new Date().getFullYear() %> Liberty Christian Centre. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

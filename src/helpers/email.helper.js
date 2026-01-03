@@ -1,18 +1,28 @@
 import MailService from "../service/mail.service";
+import db from '../../models';
+import { logger } from "../logger/winston";
 
 class MailHelper {
   static async sendMail({
-    from = "info@libertychristiancentre.com",
+    from = process.env.SMTP_USER,
     to,
     subject,
     template,
     params = {},
   }) {
     try {
+
+      const emailEnabled = await db.Settings.isActive('email');
+      if (!emailEnabled) {
+        logger.info('Email sending is disabled in settings. Skipping email.');
+        return false;
+      }
+
       const mail = new MailService(from, to, subject, template, params);
-      return await mail.send();
+      mail.send();
+      return true;
     } catch (error) {
-      console.error("Email send failed:", error.message);
+      logger.error(`Email send failed: ${error.message}`);
       return false;
     }
   }

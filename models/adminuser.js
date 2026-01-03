@@ -19,6 +19,11 @@ module.exports = (sequelize, DataTypes) => {
   }
   AdminUser.init(
     {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
       password: {
         type: DataTypes.STRING,
       },
@@ -29,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       role: {
         type: DataTypes.ENUM,
-        values: ["SUPER_ADMIN", "ADMIN", "EDITOR", "EDITOR"],
+        values: ["SUPER_ADMIN", "ADMIN", "EDITOR", "VIEWER"],
         defaultValue: "ADMIN",
       },
       memberId: {

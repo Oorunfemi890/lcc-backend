@@ -1,125 +1,91 @@
-// models/attendance.js
 "use strict";
 const { Model } = require("sequelize");
-
 module.exports = (sequelize, DataTypes) => {
-  class Attendance extends Model {
-    static associate(models) {
-      // Attendance belongs to Admin (who recorded it)
-      Attendance.belongsTo(models.AdminUser, {
-        foreignKey: 'recordedById',
-        as: 'recordedBy'
-      });
-
-      // Attendance has many MemberAttendance records
-      Attendance.hasMany(models.MemberAttendance, {
-        foreignKey: 'attendanceId',
-        as: 'memberAttendances'
-      });
-    }
-
-    // Static method for statistics
-    static async getStatistics(period = 'month') {
-      const { Op } = require('sequelize');
-      let dateFilter = {};
-      const now = new Date();
-
-      switch (period) {
-        case 'week':
-          const weekAgo = new Date(now.setDate(now.getDate() - 7));
-          dateFilter = { date: { [Op.gte]: weekAgo } };
-          break;
-        case 'month':
-          const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
-          dateFilter = { date: { [Op.gte]: monthAgo } };
-          break;
-        case 'year':
-          const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
-          dateFilter = { date: { [Op.gte]: yearAgo } };
-          break;
-      }
-
-      return await this.findAll({
-        attributes: [
-          [sequelize.fn('COUNT', sequelize.col('id')), 'totalRecords'],
-          [sequelize.fn('SUM', sequelize.col('totalAttendance')), 'totalAttendance'],
-          [sequelize.fn('AVG', sequelize.col('totalAttendance')), 'averageAttendance'],
-          [sequelize.fn('MAX', sequelize.col('totalAttendance')), 'highestAttendance'],
-          [sequelize.fn('MIN', sequelize.col('totalAttendance')), 'lowestAttendance']
-        ],
-        where: dateFilter,
-        raw: true
-      });
-    }
-  }
-
-  Attendance.init(
-    {
-      id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-        allowNull: false
-      },
-      date: {
-        type: DataTypes.DATEONLY,
-        allowNull: false
-      },
-      serviceType: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
-      totalAttendance: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-      },
-      adults: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-      },
-      youth: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-      },
-      children: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-      },
-      visitors: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-      },
-      notes: {
-        type: DataTypes.TEXT,
-        allowNull: true
-      },
-      recordedById: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-          model: 'AdminUsers',
-          key: 'id'
+    class Attendance extends Model {
+        static associate(models) {
+            // Define associations here if needed
+            // e.g., Attendance.belongsTo(models.Service, { foreignKey: 'serviceId' });
         }
-      }
-    },
-    {
-      sequelize,
-      modelName: "Attendance",
-      timestamps: true,
-      indexes: [
+    }
+    Attendance.init(
         {
-          fields: ['date']
+            id: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true
+            },
+            date: {
+                type: DataTypes.DATEONLY,
+                allowNull: false,
+                defaultValue: DataTypes.NOW
+            },
+            serviceType: {
+                type: DataTypes.ENUM,
+                values: [
+                    "Sunday Service",
+                    "Digging Deep",
+                    "Faith Clinic",
+                    "Church Without Walls",
+                    "Thanksgiving Service",
+                    "New Year Service"
+                ],
+                allowNull: false,
+                defaultValue: "Sunday Service"
+            },
+            menCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0
+            },
+            womenCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0
+            },
+            adultsCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0
+            },
+            youthCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0
+            },
+            visitorsCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0
+            },
+            childrenCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0
+            },
+            total: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0
+            },
+            notes: {
+                type: DataTypes.TEXT,
+                allowNull: true
+            }
         },
         {
-          fields: ['serviceType']
-        },
-        {
-          fields: ['recordedById']
+            sequelize,
+            modelName: "Attendance",
+            tableName: "Attendances",
+            timestamps: true,
+            hooks: {
+                beforeSave: (attendance) => {
+                    // Auto-calculate total
+                    attendance.total = (attendance.menCount || 0) + (attendance.womenCount || 0) +
+                        (attendance.adultsCount || 0) + (attendance.youthCount || 0) +
+                        (attendance.childrenCount || 0) + (attendance.visitorsCount || 0);
+                }
+            }
         }
-      ]
-    }
-  );
-
-  return Attendance;
+    );
+    return Attendance;
 };

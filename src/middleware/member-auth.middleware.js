@@ -1,4 +1,5 @@
 import App from "../helpers/index.helper";
+import { logger } from "../logger/winston";
 
 class MemberAuthMiddleware {
     static async verifyMemberToken(req, res, next) {
@@ -18,7 +19,7 @@ class MemberAuthMiddleware {
             req.user = decoded;
             next();
         } catch (error) {
-            console.error("Member auth error:", error);
+            logger.error("Member auth error:", error);
             res.status(401).send({ message: "Invalid or expired token" });
         }
     }

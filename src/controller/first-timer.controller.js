@@ -1,6 +1,11 @@
 import db from "../../models";
 const { FirstTimer, FollowUp } = db;
 import { Op } from "sequelize";
+import MailHelper from "../helpers/email.helper.js";
+import SmsService from "../service/sms.service.js";
+import WhatsappService from "../service/whatsapp.service.js";
+import { logger } from '../logger/winston';
+import MESSAGES from '../constant/messages.constant.js';
 
 class FirstTimerController {
   /**
@@ -12,12 +17,52 @@ class FirstTimerController {
 
       const firstTimer = await FirstTimer.create(data);
 
+      // Send welcome messages via Email, SMS, and WhatsApp
+      try {
+        const name = `${firstTimer.surname} ${firstTimer.otherNames}`;
+        const email = firstTimer.email;
+        const phoneNumber = firstTimer.phoneNumber;
+
+        // Prepare welcome messages from constants
+        const smsMessage = MESSAGES.FIRST_TIMER.SMS(firstTimer.surname);
+        const whatsappMessage = MESSAGES.FIRST_TIMER.WHATSAPP(name);
+
+        // Send Email (if email provided)
+        if (email) {
+          MailHelper.sendMail({
+            to: email,
+            subject: 'Welcome to Liberty Christian Centre',
+            template: 'first-timer-welcome',
+            params: {
+              name: name
+            }
+          });
+        }
+
+        // Send SMS (if phone number provided)
+        if (phoneNumber) {
+          const smsService = new SmsService();
+          smsService.send(phoneNumber, smsMessage);
+        }
+
+        // Send WhatsApp (if phone number provided)
+        if (phoneNumber) {
+          const whatsappService = new WhatsappService();
+          whatsappService.send(phoneNumber, whatsappMessage);
+        }
+
+        logger.info(`Welcome messages sent to ${name} (Email: ${email}, Phone: ${phoneNumber})`);
+      } catch (notificationError) {
+        logger.error('Failed to send welcome notifications:', notificationError);
+        // Don't fail the request if notifications fail
+      }
+
       return res.status(201).send({
-        message: "First timer created successfully",
+        message: "First timer created successfully. Welcome messages sent!",
         data: firstTimer,
       });
     } catch (error) {
-      console.error("Error creating first timer:", error);
+      logger.error("Error creating first timer:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -36,6 +81,7 @@ class FirstTimerController {
         startDate,
         endDate,
         interestedInJoining,
+        search,
       } = req.query;
 
       const where = {};
@@ -44,6 +90,15 @@ class FirstTimerController {
       if (ageGroup) where.ageGroup = ageGroup;
       if (visitDate) where.visitDate = visitDate;
       if (interestedInJoining) where.interestedInJoining = interestedInJoining === "true";
+
+      if (search) {
+        where[Op.or] = [
+          { surname: { [Op.iLike]: `%${search}%` } },
+          { otherNames: { [Op.iLike]: `%${search}%` } },
+          { phoneNumber: { [Op.iLike]: `%${search}%` } },
+          { email: { [Op.iLike]: `%${search}%` } },
+        ];
+      }
 
       // Date range filtering
       if (startDate && endDate) {
@@ -81,7 +136,7 @@ class FirstTimerController {
         data: rows,
       });
     } catch (error) {
-      console.error("Error fetching first timers:", error);
+      logger.error("Error fetching first timers:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -112,7 +167,7 @@ class FirstTimerController {
         data: firstTimer,
       });
     } catch (error) {
-      console.error("Error fetching first timer:", error);
+      logger.error("Error fetching first timer:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -137,7 +192,7 @@ class FirstTimerController {
         data: firstTimer,
       });
     } catch (error) {
-      console.error("Error updating first timer:", error);
+      logger.error("Error updating first timer:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }
@@ -158,7 +213,7 @@ class FirstTimerController {
 
       return res.status(200).send({ message: "First timer deleted successfully" });
     } catch (error) {
-      console.error("Error deleting first timer:", error);
+      logger.error("Error deleting first timer:", error);
       return res.status(500).send({ message: "Internal server error" });
     }
   }

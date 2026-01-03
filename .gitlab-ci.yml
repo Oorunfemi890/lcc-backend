@@ -1,0 +1,353 @@
+stages:
+  - deploy-dev
+  - deploy-prod
+  - manage-prod
+
+variables:
+  # Docker image settings
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+  
+  # Terraform settings
+  TF_ROOT: ${CI_PROJECT_DIR}/../lcc-infrastructure/lcc-backend/scripts/terraform
+  TF_STATE_NAME: default
+  TF_CACHE_KEY: default
+  TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}
+
+# Cache configuration
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+    - .terraform/
+
+
+# ==================== DEV DEPLOYMENT (Render) ====================
+deploy-dev:
+  stage: deploy-dev
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - echo "🚀 Triggering Render deployment for development..."
+    - |
+      # Trigger deploy
+      RESPONSE=$(curl -s -X POST "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+        -H "Accept: application/json" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $RENDER_API_KEY" \
+        -d '{}')
+
+      # Extract ID
+      DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
+
+      if [ -z "$DEPLOY_ID" ]; then 
+        echo "❌ Failed to trigger deploy or get ID: $RESPONSE"
+        exit 1
+      fi
+
+      echo "✅ Triggered deploy with ID: $DEPLOY_ID"
+
+      # Poll status
+      MAX_ATTEMPTS=60  # ~30 minutes (60 * 30s)
+      ATTEMPT=0
+      while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+        STATUS_RESPONSE=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
+          "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID")
+
+        STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status')
+        echo "📊 Deploy status: $STATUS (attempt $((ATTEMPT+1))/$MAX_ATTEMPTS)"
+
+        if [ "$STATUS" = "live" ]; then
+          echo "✅ Deploy succeeded!"
+          exit 0
+        elif [ "$STATUS" = "failed" ] || [ "$STATUS" = "canceled" ]; then
+          echo "❌ Deploy failed or canceled!"
+          echo "$STATUS_RESPONSE" | jq '.'
+          exit 1
+        fi
+
+        ATTEMPT=$((ATTEMPT+1))
+        echo "⏳ Waiting 30s..."
+        sleep 30
+      done
+
+      echo "⏱️ Timed out waiting for deploy"
+      exit 1
+  environment:
+    name: development
+    url: $DEV_APP_URL
+  only:
+    - develop
+  when: manual
+
+
+# ==================== PRODUCTION DEPLOYMENT (Cloud Run) ====================
+# This job handles:
+# 1. Infrastructure planning with Terraform
+# 2. Infrastructure provisioning (with inline approval)
+# 3. Docker image building
+# 4. Deployment to Cloud Run
+deploy-prod:
+  stage: deploy-prod
+  image: google/cloud-sdk:alpine
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+  before_script:
+    # Install required tools
+    - apk add --no-cache docker-cli python3 py3-pip curl bash
+    
+    # Install Terraform
+    - wget https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
+    - unzip terraform_1.6.0_linux_amd64.zip
+    - mv terraform /usr/local/bin/
+    - terraform --version
+    
+    # Install gcloud SDK
+    - curl -sSL https://sdk.cloud.google.com | bash
+    - export PATH=$PATH:/root/google-cloud-sdk/bin
+    
+    # Authenticate with Docker Registry
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+    
+    # Authenticate with Google Cloud
+    - echo $GCP_SERVICE_KEY | base64 -d > ${HOME}/gcp-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+  script:
+    # ========== STEP 1: TERRAFORM PLAN ==========
+    - echo "📋 Step 1/4 - Planning infrastructure changes..."
+    - mkdir -p terraform
+    - cp -r ../lcc-infrastructure/lcc-backend/scripts/terraform/* terraform/ || echo "Using local terraform files"
+    - cd terraform
+    
+    # Initialize Terraform with GitLab HTTP backend
+    - |
+      terraform init \
+        -backend-config="address=${TF_ADDRESS}" \
+        -backend-config="lock_address=${TF_ADDRESS}/lock" \
+        -backend-config="unlock_address=${TF_ADDRESS}/lock" \
+        -backend-config="username=gitlab-ci-token" \
+        -backend-config="password=${CI_JOB_TOKEN}" \
+        -backend-config="lock_method=POST" \
+        -backend-config="unlock_method=DELETE" \
+        -backend-config="retry_wait_min=5"
+    
+    # Create terraform.tfvars from environment variables
+    - |
+      cat > terraform.tfvars <<EOF
+      project_id = "$GCP_PROJECT_ID"
+      region = "$GCP_REGION"
+      service_name = "$CLOUD_RUN_SERVICE_NAME"
+      image = "$IMAGE_NAME:$IMAGE_TAG"
+      min_instances = 0
+      max_instances = 10
+      EOF
+    
+    # Run terraform plan
+    - terraform plan -out=tfplan
+    - terraform show -json tfplan > plan.json
+    - echo "✅ Infrastructure plan created"
+    
+    # ========== STEP 2: TERRAFORM APPLY ==========
+    - echo "🚀 Step 2/4 - Provisioning infrastructure..."
+    - terraform apply -auto-approve tfplan
+    
+    # Export outputs for deployment
+    - terraform output -json > ../terraform-outputs.json
+    - cat ../terraform-outputs.json
+    
+    # Extract specific outputs
+    - export SERVICE_URL=$(terraform output -raw service_url)
+    - export SERVICE_NAME=$(terraform output -raw service_name)
+    - echo "SERVICE_URL=$SERVICE_URL" >> ../terraform.env
+    - echo "SERVICE_NAME=$SERVICE_NAME" >> ../terraform.env
+    - echo "✅ Infrastructure provisioned"
+    - echo "   Service Name $SERVICE_NAME"
+    - echo "   Service URL $SERVICE_URL"
+    - cd ..
+    
+    # ========== STEP 3: BUILD DOCKER IMAGE ==========
+    - echo "🔨 Step 3/4 - Building Docker image..."
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG -t $IMAGE_NAME:latest .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+    - docker push $IMAGE_NAME:latest
+    - echo "✅ Docker image built and pushed"
+    - echo "   Image $IMAGE_NAME:$IMAGE_TAG"
+    
+    # ========== STEP 4: DEPLOY TO CLOUD RUN ==========
+    - echo "🚢 Step 4/4 - Deploying to Cloud Run..."
+    - |
+      gcloud run deploy $SERVICE_NAME \
+        --image $IMAGE_NAME:$IMAGE_TAG \
+        --region $GCP_REGION \
+        --platform managed \
+        --allow-unauthenticated \
+        --set-env-vars="NODE_ENV=production" \
+        --set-secrets="DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,CLOUDINARY_CLOUD_NAME=cloudinary-cloud-name:latest,CLOUDINARY_API_KEY=cloudinary-api-key:latest,CLOUDINARY_API_SECRET=cloudinary-api-secret:latest" \
+        --memory 512Mi \
+        --cpu 1 \
+        --min-instances 0 \
+        --max-instances 10 \
+        --timeout 300 \
+        --port 8080
+    - echo "✅ Production deployment completed successfully"
+    - echo "🌐 Service URL $SERVICE_URL"
+    - gcloud run services describe $SERVICE_NAME --region $GCP_REGION --format 'value(status.url)'
+  artifacts:
+    paths:
+      - terraform/tfplan
+      - terraform/plan.json
+      - terraform-outputs.json
+      - terraform.env
+    expire_in: 30 days
+  environment:
+    name: production
+    url: $SERVICE_URL
+  only:
+    - staging
+  when: manual  # Requires manual trigger to start deployment
+
+
+# ==================== ROLLBACK PRODUCTION ====================
+rollback-prod:
+  stage: manage-prod
+  image: google/cloud-sdk:alpine
+  before_script:
+    - echo $GCP_SERVICE_KEY | base64 -d > ${HOME}/gcp-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+  script:
+    # Use the service name from CI/CD variables
+    - export SERVICE_NAME=$CLOUD_RUN_SERVICE_NAME
+    
+    - echo "⏮️ Rolling back service $SERVICE_NAME"
+    - |
+      PREVIOUS_REVISION=$(gcloud run revisions list \
+        --service $SERVICE_NAME \
+        --region $GCP_REGION \
+        --format="value(name)" \
+        --limit=2 | tail -n 1)
+    - echo "Rolling back to revision $PREVIOUS_REVISION"
+    - |
+      gcloud run services update-traffic $SERVICE_NAME \
+        --region $GCP_REGION \
+        --to-revisions=$PREVIOUS_REVISION=100
+    - echo "✅ Rollback completed successfully"
+  environment:
+    name: production
+  only:
+    - staging
+  when: manual
+
+
+# ==================== INFRASTRUCTURE DESTROY (Emergency) ====================
+terraform-destroy:
+  stage: manage-prod
+  image: 
+    name: hashicorp/terraform:1.6
+    entrypoint: [""]
+  before_script:
+    # Install gcloud SDK
+    - apk add --no-cache python3 py3-pip curl bash
+    - curl -sSL https://sdk.cloud.google.com | bash
+    - export PATH=$PATH:/root/google-cloud-sdk/bin
+    
+    # Authenticate with GCP
+    - echo $GCP_SERVICE_KEY | base64 -d > ${HOME}/gcp-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+    
+    # Setup terraform
+    - mkdir -p terraform
+    - cp -r ../lcc-infrastructure/lcc-backend/scripts/terraform/* terraform/ || echo "Using local terraform files"
+    - cd terraform
+    
+    # Initialize Terraform
+    - terraform init \
+        -backend-config="address=${TF_ADDRESS}" \
+        -backend-config="lock_address=${TF_ADDRESS}/lock" \
+        -backend-config="unlock_address=${TF_ADDRESS}/lock" \
+        -backend-config="username=gitlab-ci-token" \
+        -backend-config="password=${CI_JOB_TOKEN}" \
+        -backend-config="lock_method=POST" \
+        -backend-config="unlock_method=DELETE" \
+        -backend-config="retry_wait_min=5"
+  script:
+    - cd terraform
+    # Create terraform.tfvars
+    - |
+      cat > terraform.tfvars <<EOF
+      project_id = "$GCP_PROJECT_ID"
+      region = "$GCP_REGION"
+      service_name = "$CLOUD_RUN_SERVICE_NAME"
+      image = "$IMAGE_NAME:latest"
+      min_instances = 0
+      max_instances = 10
+      EOF
+    
+    # Destroy infrastructure
+    - echo "⚠️ DESTROYING ALL INFRASTRUCTURE ⚠️"
+    - terraform destroy -auto-approve
+    - echo "✅ Infrastructure destroyed"
+  environment:
+    name: production-infrastructure
+    action: stop
+  only:
+    - staging
+  when: manual
+
+
+# ==================== COST CONTROL (Suspend/Resume) ====================
+suspend-prod:
+  stage: manage-prod
+  image: google/cloud-sdk:alpine
+  before_script:
+    - echo $GCP_SERVICE_KEY | base64 -d > ${HOME}/gcp-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+  script:
+    - echo "⏸️ Suspending service (Revoking public access)..."
+    - export SERVICE_NAME=$CLOUD_RUN_SERVICE_NAME
+    # Remove the 'allUsers' binding which makes it public
+    - |
+      gcloud run services remove-iam-policy-binding $SERVICE_NAME \
+        --region $GCP_REGION \
+        --member="allUsers" \
+        --role="roles/run.invoker" || echo "Service was already private or not found"
+    - echo "✅ Service is now PRIVATE. Public traffic cannot wake it up."
+  environment:
+    name: production
+  only:
+    - staging
+  when: manual
+
+resume-prod:
+  stage: manage-prod
+  image: google/cloud-sdk:alpine
+  before_script:
+    - echo $GCP_SERVICE_KEY | base64 -d > ${HOME}/gcp-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+  script:
+    - echo "▶️ Resuming service (Restoring public access)..."
+    - export SERVICE_NAME=$CLOUD_RUN_SERVICE_NAME
+    # Add 'allUsers' binding to make it public again
+    - |
+      gcloud run services add-iam-policy-binding $SERVICE_NAME \
+        --region $GCP_REGION \
+        --member="allUsers" \
+        --role="roles/run.invoker"
+    - echo "✅ Service is now PUBLIC."
+  environment:
+    name: production
+  only:
+    - staging
+  when: manual

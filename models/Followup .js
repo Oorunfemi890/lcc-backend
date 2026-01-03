@@ -11,6 +11,12 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'firstTimer'
             });
 
+            // FollowUp belongs to Member (as target)
+            FollowUp.belongsTo(models.Member, {
+                foreignKey: 'targetMemberId',
+                as: 'targetMember'
+            });
+
             // FollowUp belongs to Member (who is doing the follow-up)
             FollowUp.belongsTo(models.Member, {
                 foreignKey: 'assignedToMemberId',
@@ -28,12 +34,22 @@ module.exports = (sequelize, DataTypes) => {
             },
             firstTimerId: {
                 type: DataTypes.UUID,
-                allowNull: false,
+                allowNull: true,
                 references: {
                     model: 'FirstTimers',
                     key: 'id'
                 },
                 onDelete: 'CASCADE',
+                onUpdate: 'CASCADE'
+            },
+            targetMemberId: {
+                type: DataTypes.UUID,
+                allowNull: true,
+                references: {
+                    model: 'Members',
+                    key: 'id'
+                },
+                onDelete: 'SET NULL',
                 onUpdate: 'CASCADE'
             },
             assignedToMemberId: {
@@ -47,9 +63,22 @@ module.exports = (sequelize, DataTypes) => {
                 onUpdate: 'CASCADE'
             },
             followUpType: {
-                type: DataTypes.ENUM,
-                values: ['phone_call', 'home_visit', 'church_visit', 'whatsapp', 'email'],
-                allowNull: false
+                type: DataTypes.ARRAY(DataTypes.STRING),
+                allowNull: false,
+                defaultValue: [],
+                validate: {
+                    isValidTypes(value) {
+                        const validTypes = ['phone_call', 'home_visit', 'church_visit', 'whatsapp', 'email', 'sms'];
+                        if (!Array.isArray(value) || value.length === 0) {
+                            throw new Error('followUpType must be a non-empty array');
+                        }
+                        for (const type of value) {
+                            if (!validTypes.includes(type)) {
+                                throw new Error(`Invalid followUpType: ${type}`);
+                            }
+                        }
+                    }
+                }
             },
             scheduledDate: {
                 type: DataTypes.DATEONLY,

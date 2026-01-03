@@ -1,4 +1,5 @@
 "use strict";
+// Reload fix
 const { Testimony, Member } = require("../../models");
 const { Op } = require("sequelize");
 
@@ -62,7 +63,7 @@ class TestimonyController {
           {
             model: Member,
             as: "member",
-            attributes: ["id", "firstName", "lastName", "email", "phone"]
+            attributes: ["id", "firstName", "lastName", "email", "phoneNumber"]
           }
         ]
       });
@@ -86,7 +87,7 @@ class TestimonyController {
           {
             model: Member,
             as: "member",
-            attributes: ["id", "firstName", "lastName", "email", "phone"]
+            attributes: ["id", "firstName", "lastName", "email", "phoneNumber"]
           }
         ]
       });

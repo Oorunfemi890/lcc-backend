@@ -1,6 +1,7 @@
 "use strict";
 import fs from "fs/promises";
 import path from "path";
+import { logger } from "../logger/winston";
 
 const DATA_FILE = path.join(process.cwd(), "src", "data", "hero-slider.json");
 const VALID_SLIDE_IDS = ["slide-1", "slide-2", "slide-3"];
@@ -41,7 +42,7 @@ class HeroSliderController {
       const fullPath = path.join(__dirname, "..", imagePath);
       await fs.unlink(fullPath);
     } catch (error) {
-      console.log("Could not delete old image:", error.message);
+      logger.error(`Could not delete old image: ${error.message}`);
     }
   }
 
@@ -85,7 +86,7 @@ class HeroSliderController {
 
       const sliderData = await HeroSliderController.readSliderData();
       const slide = sliderData.find((s) => s.id === id);
- 
+
       if (!slide) {
         return res.status(404).json({
           success: false,
@@ -113,9 +114,9 @@ class HeroSliderController {
   static async updateSlide(req, res) {
     try {
       const ctaIcon = {
-        "slide-1":"🎧",
-         "slide-2":"📅",
-         "slide-3": "❤️"
+        "slide-1": "🎧",
+        "slide-2": "📅",
+        "slide-3": "❤️"
       }
       const { id } = req.params;
       const { title, subtitle, cta } = req.body;
