@@ -1,3 +1,4 @@
+// src/boostrap/express.js - FIXED VERSION
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
@@ -6,7 +7,7 @@ const cors = require("cors");
 import { logger } from "../logger/winston";
 const customExpress = require("../validation/express.validation");
 
-
+// ===== MEMBER/CHURCH SITE ROUTES =====
 import authRoute from "../routes/auth.route";
 import member from '../routes/member.route';
 import celebrant from '../routes/celebrant.route'
@@ -15,18 +16,22 @@ import followup from '../routes/follow-up.route';
 import program from '../routes/program.route';
 import service from '../routes/service.route';
 import testimony from '../routes/testimony.route';
-
 import heroslide from '../routes/hero-slide.route'
+
+// ===== ADMIN DASHBOARD ROUTES =====
+import adminAuthRoute from '../routes/admin-auth.route';  // NEW: Admin dashboard auth
+import adminManagementRoute from '../routes/admin-management.route';
 import dashboardRoute from '../routes/dashboard.route';
 import attendanceRoute from '../routes/attendance.route';
-import adminManagementRoute from '../routes/admin-management.route';
 import settingsRoute from '../routes/settings.route';
 
 module.exports = function () {
   app.use(bodyParser.json());
   app.use(cors());
   app.use(bodyParser.urlencoded({ extended: false }));
-  app.use("/api/v1/auth", authRoute);
+
+  // ===== MEMBER/CHURCH SITE API ROUTES =====
+  app.use("/api/v1/auth", authRoute);  // Member auth (church site)
   app.use("/api/v1/member", member);
   app.use("/api/v1/celebrant", celebrant);
   app.use("/api/v1/firsttimer", firsttimer);
@@ -35,16 +40,16 @@ module.exports = function () {
   app.use("/api/v1/service", service);
   app.use("/api/v1/testimony", testimony);
   app.use("/api/v1/hero-slider", heroslide);
+
+  // ===== ADMIN DASHBOARD API ROUTES =====
+  // ✅ CRITICAL FIX: Admin dashboard auth should use separate endpoint
+  app.use("/api/v1/auth/admin", adminAuthRoute);  // Admin auth (dashboard)
+  app.use("/api/v1/admin", adminManagementRoute);
   app.use("/api/v1/dashboard", dashboardRoute);
   app.use("/api/v1/attendance", attendanceRoute);
-  app.use("/api/v1/admin", adminManagementRoute);
   app.use("/api/v1/settings", settingsRoute);
 
-
-
   app.set('view engine', 'ejs');
-
-
 
   // Health check endpoints
   app.get("/health-check", (req, res) => {
@@ -58,7 +63,6 @@ module.exports = function () {
       service: "lcc-backend"
     });
   });
-
 
   app.response = Object.create(customExpress);
 
